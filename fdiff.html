@@ -1,0 +1,1368 @@
+<!doctype html>
+<html><head>
+<title>FDIFF: Difference of texts or claims</title>
+<meta charset="utf-8">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="x-ua-compatible" content="IE=Edge">
+<script language="JavaScript" type="text/javascript" src="lib/jquery-1.8.2.min.js"></script>
+<script language="JavaScript" type="text/javascript" src="lib/diffPatchTextModif.js"></script>
+<script language="JavaScript" type="text/javascript" src="fdiff.js"></script>
+<script language="JavaScript" type="text/javascript" src="claims.js"></script>
+<style type="text/css">
+
+body {
+    font: normal 13px Verdana, Arial, sans-serif;
+}
+
+ul {
+	padding-left: 15px;
+}
+
+.input {
+	height: 300px;
+	width: 99%;
+	font-family: monospace;
+}
+
+.listbox {
+	height: 1em;
+}
+
+.title {
+	width: 95%;
+	border: 0px;
+	text-align: center;
+	font-family: serif;
+	font-size: 110%;
+}
+
+.output {
+	border: 1px solid;
+	background: lightyellow;
+	min-height: 50px;
+	padding-left: 3px;
+	padding-top: 3px;
+	padding-right: 3px;
+	padding-bottom: 3px;
+	font-family: serif;
+	font-size: 120%;
+}
+
+.output_clean {
+	border: 1px solid;
+	background: white;
+	min-height: 50px;
+	padding-left: 3px;
+	padding-top: 3px;
+	padding-right: 3px;
+	padding-bottom: 3px;
+	font-family: serif;
+	font-size: 120%;
+}
+
+.time {
+	width: 100%;
+	font-size: 80%;
+}
+
+@media print {
+	.noprint {
+		display: none;
+	}
+	.print {
+		background: white;
+		border: 0px;
+	}
+}
+
+.fdiff4 {
+	border-collapse: collapse;
+	border: grey 1px solid;
+	empty-cells: show;
+}
+
+td.fdiff4 {
+	padding: 5px;
+}
+
+.tooltip {
+    display: none;
+    position: absolute;
+    background: white;
+    border: 2px solid black;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+:hover + .tooltip {
+    display: block;
+}
+
+</style>
+
+<script language="JavaScript" type="text/javascript">
+
+var text1 = text2 = "";
+var fdiff_config = "unknown";
+var text_changed = [ false, false, false, false, false ];
+var lb_prev_index = [ -1, -1, -1, -1, -1 ];
+var claim_indexes = [];
+var desc_indexes = [];
+var line_spacing = "120%";
+
+var output_mode = 0;			// 0 = coloured, 1 = clean, 2 = clean & monochrome
+var OUTPUT_MODE_NORMAL = 0, OUTPUT_MODE_CLEAN = 1, OUTPUT_MODE_MONO = 2;
+
+// Show the version number upon loading
+// For the alpha version, we don't use function calls because it might not even compile
+$(document).ready(function() {
+	var url = window.location.href;
+	var version_text = "x.xx";
+
+	// Figure out in which mode to run
+	if( url.search( /fdiff.alpha.test.test/ ) > 0 ) {
+		fdiff_config = "test";
+	} else if( url.search( /fdiff.alpha.index/ ) > 0 ) {
+		fdiff_config = "alpha";
+	} else if( url.search( /frank.fdiff.index/ ) > 0 ) {
+		fdiff_config = "beta";
+	} else if( url.search( /fdiffpreparation.html/ ) > 0 ) {
+		fdiff_config = "preparation";
+	} else {
+		fdiff_config = "release";
+	}
+	
+	// For debugging in Alpha, override the configuration (this should be commented out before release)
+	//fdiff_config = "preparation";
+	//fdiff_config = "release";
+	//fdiff_config = "beta";
+	
+	// Set version text
+	if( fdiff_config == "alpha" ) {
+		version_text = "<font color=\"red\" size=\"+2\">THIS IS THE (UNSTABLE) ALPHA VERSION! (" + fdiff.get_version() + ")</font>";
+	} else if( fdiff_config == "beta" ) {
+		version_text = "<font style=\"BACKGROUND-COLOR: red\" size=\"+1\">THIS IS THE BETA VERSION (" + fdiff.get_version() + ")</font>";
+	} else if( fdiff_config == "preparation" ) {
+		version_text = "Version: " + fdiff.get_version() + " (PREP)" + " [<A HREF='fdiff.html' title='Opens FDIFF without preloaded claims'>Classic FDIFF</A>]";
+	} else if( fdiff_config == "test" ) {
+		version_text = "Version: " + fdiff.get_version() + " (Test Suite)";
+	} else if( fdiff_config == "release" ) {
+		version_text = "Version: " + fdiff.get_version() + " (Release)";
+	} else {
+		version_text = "Version: " + fdiff.get_version();
+	}
+	document.getElementById("fdiff_version").innerHTML = version_text;
+
+	// Hide the secondary and tertiary outputs
+	$('#output2').hide();
+	$('#output3').hide();
+	
+	// Initialise the list boxes with claim and description sets (or grayed out listboxes)
+	initialise_listboxes( fdiff_config );
+	
+	// Automatically load settings if the parameter is set
+	if( (url.search(/load_settings=yes/) != -1) || 
+		((typeof( settings ) != "undefined") && 
+		 (typeof( settings.startup_mode ) != "undefined") &&
+		 (settings.startup_mode == 1)) ) {
+		load_settings();
+	} else if( ((typeof( settings ) != "undefined") && 
+				(typeof( settings.startup_mode ) != "undefined") &&
+				(settings.startup_mode == 2)) ) {
+		import_settings();
+	}	
+	
+	// Automatically run the script if the auto parameter is set
+	if( (url.search(/compare=yes/) != -1) || (fdiff_config == "preparation") || (fdiff_config == "test") || (fdiff_config == "alpha") ){
+		launch( 'c' );
+	}
+	
+});
+
+
+/* cycle_line_spacing()
+ *
+ * Switches to the next line spacing (100%, 120%, 150%, 200%) in the default output
+ */
+
+function cycle_line_spacing() {
+
+	// Cycle through some line spacings
+	if( line_spacing == "100%" ) {
+		line_spacing = "120%";	
+	} else if( line_spacing == "120%" ) {
+		line_spacing = "150%";	
+	} else if( line_spacing == "150%" ) {
+		line_spacing = "200%";
+	} else if( line_spacing == "200%" ) {
+		line_spacing = "300%";
+	} else {
+		line_spacing = "100%";
+	}
+	
+	// Set the new line spacing in the output table style
+	document.getElementById( "output1" ).style.lineHeight = line_spacing;
+
+}
+
+
+/* cycle_output_mode
+ *
+ * Switches to the given output mode, or to the next if no parameter set
+ */
+ 
+function cycle_output_mode( to_output_mode ) {
+
+	var new_output_mode = 0;
+	var active_output;
+
+	// If called without parameter, use the global to cycle to the next
+	if( typeof( to_output_mode ) == "undefined" ) {
+		if( output_mode == OUTPUT_MODE_NORMAL ) {
+			new_output_mode = OUTPUT_MODE_CLEAN;
+		} else if( output_mode == OUTPUT_MODE_CLEAN ) {
+			new_output_mode = OUTPUT_MODE_MONO;
+		} else {
+			new_output_mode = OUTPUT_MODE_NORMAL;
+		}
+	} else {
+		new_output_mode = to_output_mode;
+	}
+
+	// Switch to the correct output mode, if we aren't there already
+	if( new_output_mode != output_mode ) {
+
+		// Re-filter the last normal output, to make sure we catch all changes to the title etc.
+		var filtered_clean = fdiff.filter_table_contents( $('#output1').html() );
+		var filtered_mono = fdiff.filter_table_colours( filtered_clean );
+
+		if( new_output_mode == OUTPUT_MODE_CLEAN ) {
+			$('#output1').hide();
+			$('#output3').hide();
+			$('#output2').html( filtered_clean );
+			$('#output2').show();
+		} else if( new_output_mode == OUTPUT_MODE_MONO ) {
+			$('#output1').hide();
+			$('#output2').hide();
+			$('#output3').html( filtered_mono );
+			$('#output3').show();
+		} else {
+			$('#output1').show();
+			$('#output2').hide();
+			$('#output3').hide();
+		}
+
+		// Switch the correct output field
+		output_mode = new_output_mode;
+	}
+		
+}
+
+
+
+
+/*
+ * copyCleanOutput()
+ * shows the clean output table if not shown,  then selects the table and copies it for pasting into a word processor.
+ * (h/t Madou Keita)
+ */
+ 
+function copyCleanOutput() 
+{
+	// Activate the correct output table
+	cycle_output_mode( OUTPUT_MODE_CLEAN );
+	
+	// Select and copy the output table
+    selectElementContents( document.getElementById('output2') )
+}
+
+/*
+ * copyMonoOutput()
+ * shows the clean & mono output table if not shown,  then selects the table and copies it for pasting into a word processor.
+ * (h/t Madou Keita)
+ */
+  
+function copyMonoOutput() 
+{
+	// Activate the correct output table
+	cycle_output_mode( OUTPUT_MODE_MONO );
+	
+	// Select and copy the output table
+    selectElementContents( document.getElementById('output3') )
+}
+
+
+/*
+ * selectElementContents()
+ * selects the displayed html text of an element and copies it.
+ * (h/t Madou Keita)
+ */
+ 
+function selectElementContents(el) {
+    var body = document.body, range, sel;
+    if (document.createRange && window.getSelection) {
+        range = document.createRange();
+        sel = window.getSelection();
+        sel.removeAllRanges();
+        try {
+            range.selectNodeContents(el);
+            sel.addRange(range);
+        } catch (e) {
+            range.selectNode(el);
+            sel.addRange(range);
+        }
+        document.execCommand("copy");
+        //sel.removeAllRanges(); //mk: remove comment to get rid of text selection (text marking) after the copy action. 
+
+    } else if (body.createTextRange) {
+        range = body.createTextRange();
+        range.moveToElementText(el);
+        range.select();
+        range.execCommand("Copy");
+    }
+}
+
+
+function initialise_listboxes( fdiff_config ) {
+
+	// When more claimsets are defined, put the other claim sets in the listboxes
+	if( ((fdiff_config == "preparation") || (fdiff_config == "alpha" )) && 
+		(typeof( applicationdata ) != "undefined") ) 
+	{
+	  var lb1 = document.getElementById("select1"); 
+	  var lb2 = document.getElementById("select2"); 
+	  var lb3 = document.getElementById("select3");
+	  var lb4 = document.getElementById("select4");
+	  var oldest_desc_date = 99999999;
+	  var oldest_desc = -1;
+
+	  // Store the dossier number and put it in the browser title
+	  if( typeof( applicationdata.dossier ) != "undefined" ) {
+		fdiff.set_dossier_number( applicationdata.dossier );
+		document.title = "FDIFF (" + applicationdata.dossier + ")";
+	  }
+	  
+	  // Reset some variables (just to be sure)
+	  desc_indexes = [];
+	  claim_indexes = [];
+	  $('#text1').val( "" );
+	  $('#text2').val( "" );
+	  $('#text3').val( "" );
+	  $('#text4').val( "" );
+	  
+	  // Go through the supplied claim sets, store them in the correct listboxes
+	  for( var i = 0; i < applicationdata.claimsets.length; i++ ) {
+
+		// Skip the horizontal ruler (it has no request field)
+		if( typeof( applicationdata.claimsets[i].request ) != "undefined" )
+		{
+			// Check whether this text is description or claims
+			if( applicationdata.claimsets[i].request == "DESCRIPTION" ) {
+			
+				// As a fallback option for applicationdata.desc_original, try to find oldest description (for later use)
+				var regexp = /(\d+)\-(\d+)\-(\d+)/;
+				var matches;
+				if( (matches = regexp.exec( applicationdata.claimsets[i].date )) != null ) {
+					desc_date = parseInt( matches[3] ) + parseInt( matches[2] ) * 100 + parseInt( matches[1] ) * 10000;
+					if( desc_date < oldest_desc_date ) {
+						oldest_desc_date = desc_date;
+						oldest_desc = i;
+						lb3.selectedIndex = desc_indexes.length;
+					}
+				}
+				// Store the index in the translation table
+				desc_indexes.push( i );
+				
+				// Put the headers in the list boxes
+				var option3 = document.createElement("option");
+				option3.text =  applicationdata.claimsets[i].header;
+				lb3.add( option3 );
+
+				var option4 = document.createElement("option");
+				option4.text =  applicationdata.claimsets[i].header;
+				lb4.add( option4 );
+
+			} else {
+			
+				// Store the index in the translation table
+				claim_indexes.push( i );
+			
+				// Create the options for the claims listboxes
+				var option1 = document.createElement("option");
+				option1.text =  applicationdata.claimsets[i].header;
+				lb1.add( option1 );
+
+				var option2 = document.createElement("option");
+				option2.text =  applicationdata.claimsets[i].header;
+				lb2.add( option2 );
+			}
+		}
+	  }
+	  
+	  // Input the selected claims and description into the text boxes
+	  if( typeof( applicationdata.set_original ) != "undefined" ) {
+		lb1.selectedIndex = applicationdata.set_original;
+		if( applicationdata.claimsets.length > applicationdata.set_original ) {
+			$('#text1').val( applicationdata.claimsets[ applicationdata.set_original ].text );
+			fdiff.set_header_orig( applicationdata.claimsets[ applicationdata.set_original ].header );
+		}
+	  }
+	  if( typeof( applicationdata.set_new ) != "undefined" ) {
+		lb2.selectedIndex = applicationdata.set_new;
+		if( applicationdata.claimsets.length > applicationdata.set_new ) {
+			$('#text2').val( applicationdata.claimsets[ applicationdata.set_new ].text );
+			fdiff.set_header_new( applicationdata.claimsets[ applicationdata.set_new ].header );
+		}
+	  }
+	  if( typeof( applicationdata.desc_original ) != "undefined" ) {
+		lb3.selectedIndex = applicationdata.desc_original;
+		if( applicationdata.claimsets.length > applicationdata.desc_original ) {
+			$('#text3').val( applicationdata.claimsets[ applicationdata.desc_original ].text );
+		}
+	  } else {
+	    // No original description defined -- find the oldest; this should only happen until ..FDIFF is updated
+		if( oldest_desc >= 0 ) {
+			//lb3.selectedIndex = oldest_desc; This is set already above, at the check for oldest description
+			$('#text3').val( applicationdata.claimsets[ oldest_desc ].text );
+		} else {
+			// No descriptions found
+			lb3.selectedIndex = -1;
+		}
+	  }
+	  if( typeof( applicationdata.desc_new ) != "undefined" ) {
+		lb4.selectedIndex = applicationdata.desc_new;
+		if( applicationdata.claimsets.length > applicationdata.desc_new ) {
+			$('#text4').val( applicationdata.claimsets[ applicationdata.desc_new ].text );
+		}
+	  } else {
+		lb4.selectedIndex = -1;
+	  }	  
+	  
+	} else {
+	
+		// No claim sets defined -- disable list boxes (usage with copy-paste)
+		var lb1 = document.getElementById("select1");
+		var lb2 = document.getElementById("select2");
+		var lb3 = document.getElementById("select3");
+		var lb4 = document.getElementById("select4");
+		lb1.disabled = 1;
+		lb2.disabled = 1;
+		lb3.disabled = 1;
+		lb4.disabled = 1;
+	}
+
+}
+
+function save_settings() {
+
+	var cookie_value, cookie_value_set, cookie_value_no_exp;
+
+	// Favourite algorithm
+	if( $('#google').attr("checked") ) {
+	  cookie_value = "alg=g";
+	} else if( $('#fdiff4').attr("checked") ) {
+	  cookie_value = "alg=4";
+	} else if( $('#fdiff3').attr("checked") ) {
+	  cookie_value = "alg=3";
+	}
+
+	// FDIFF options
+	cookie_value = cookie_value +
+		"&f3h=" + ($('#fdiff3_highlights').attr("checked") ? 1 : 0) +
+		"&f4s=" + ($('#fdiff4_strikeout_highlights').attr("checked") ? 1 : 0) +
+		"&f4c=" + ($('#fdiff4_warn_claims').attr("checked") ? 1 : 0) +
+		"&f4l=" + ($('#fdiff4_simplify_legend').attr("checked") ? 1 : 0) +
+		"&cnb=" + ($('#convert_claim_styles').attr("checked") ? 1 : 0) +
+		"&ih=" +  ($('#ignore_hyphenation').attr("checked") ? 1 : 0) +
+		"&en=" +  ($('#eszett_normalization').attr("checked") ? 1 : 0) +
+		"&ic=" +  ($('#ignore_case').attr("checked") ? 1 : 0) +
+		"&is=" +  ($('#ignore_spaces').attr("checked") ? 1 : 0) +
+		"&ib=" +  ($('#ignore_in_brackets').attr("checked") ? 1 : 0) +
+		"&fg=" +  ($('#fix_glued_words').attr("checked") ? 1 : 0) +
+		"&lb=" +  ($('#linebreaks').attr("checked") ? 1 : 0) +
+		"&lb2=" +  ($('#linebreaks2').attr("checked") ? 1 : 0) +
+		"&f4t=" +  ($('#fdiff4_tree_analysis').attr("checked") ? 1 : 0) +
+		"&bt=" +  parseFloat( $('#basis_threshold').val() );
+
+	// Google Diff options
+	cookie_value = cookie_value + 
+		"&gto=" + ($('#timeout').val()) +
+		"&gec=" + ($('#editcost').val()) +
+		"&gs="  + ($('#semantic').attr("checked") ? 1 : 0) + 
+		"&ge="  + ($('#efficiency').attr("checked") ? 1 : 0);
+
+	// Add a version number for later, in case this changes
+	cookie_value = cookie_value + "&fcv=1";
+	
+	// First try localStorage, default to cookie for old browsers
+	if (typeof(localStorage) !== "undefined") {
+		localStorage.setItem( "settings", cookie_value );
+		// Now double check that the storage value has indeed been set
+		cookie_value_set = localStorage.getItem( "settings" );
+		if( cookie_value_set != cookie_value ) {
+			alert( "Error: can't save settings to LocalStorage" );
+		}
+	}  else {
+	
+		// Add expiry in 1000 days
+		var d = new Date();
+		d.setTime(d.getTime() + (1000*24*60*60*1000));
+		document.cookie = cookie_value + "; expires=" + d.toUTCString();
+		// Now double check that the cookie value has indeed been set
+		cookie_value_set = document.cookie;
+		if( (typeof( cookie_value_set ) == "undefined") || (cookie_value_set != cookie_value) ) {
+			alert( "Error: can't save settings to a cookie -- are cookies enabled?" );
+		}
+	}
+}
+
+function load_settings( cookie_value ) {
+
+	// Call without parameter loads the settings from a cookie
+	if( typeof( cookie_value ) == "undefined" ) {
+		if (typeof(localStorage) !== "undefined") {
+			cookie_value = localStorage.getItem( "settings" );
+			if( cookie_value == null ) {
+				alert( "Error: No settings saved yet\n " +
+						"Either click the save settings button,\n" +
+						"or use the settings menu in the ..FDIFF GUI" );
+				return;
+			}
+		} else {
+			cookie_value = document.cookie;
+			if( cookie_value.length < 1 ) {
+				alert( "Error: No settings found -- are cookies enabled?\n" +
+						"Either click the save settings button,\n" +
+						"or use the settings menu in the ..FDIFF GUI" );
+				return;
+			}
+		}
+	}
+
+
+	// Set algorithm -- FDIFF4 is default
+    if( cookie_value.indexOf( "alg=g") != -1 ) {
+	    $('#google').prop("checked", true);
+	} else if( cookie_value.indexOf( "alg=3") != -1 ) {
+	    $('#fdiff3').prop("checked", true);
+	} else {
+	    $('#fdiff4').prop("checked", true);
+	}
+
+	// Set FDIFF option values; set to default if not in cookie
+    if( cookie_value.indexOf( "f3h=0") != -1 ) {
+	    $('#fdiff3_highlights').prop("checked", false);
+	} else {
+	    $('#fdiff3_highlights').prop("checked", true);
+	}
+    if( cookie_value.indexOf( "f4s=0") != -1 ) {
+	    $('#fdiff4_strikeout_highlights').prop("checked", false);
+	} else {
+	    $('#fdiff4_strikeout_highlights').prop("checked", true);
+	}
+    if( cookie_value.indexOf( "f4c=0") != -1 ) {
+	    $('#fdiff4_warn_claims').prop("checked", false);
+	} else {
+	    $('#fdiff4_warn_claims').prop("checked", true);
+	}
+    if( cookie_value.indexOf( "f4l=0") != -1 ) {
+	    $('#fdiff4_simplify_legend').prop("checked", false);
+	} else {
+	    $('#fdiff4_simplify_legend').prop("checked", true);
+	}
+    if( cookie_value.indexOf( "cnb=1") != -1 ) {
+	    $('#convert_claim_styles').prop("checked", true);
+	} else {
+	    $('#convert_claim_styles').prop("checked", false);
+	}
+    if( cookie_value.indexOf( "ih=1") != -1 ) {
+	    $('#ignore_hyphenation').prop("checked", true);
+	} else {
+	    $('#ignore_hyphenation').prop("checked", false);
+	}
+    if( cookie_value.indexOf( "en=1") != -1 ) {
+	    $('#eszett_normalization').prop("checked", true);
+	} else {
+	    $('#eszett_normalization').prop("checked", false);
+	}
+    if( cookie_value.indexOf( "ic=1") != -1 ) {
+	    $('#ignore_case').prop("checked", true);
+	} else {
+	    $('#ignore_case').prop("checked", false);
+	}
+    if( cookie_value.indexOf( "is=1") != -1 ) {
+	    $('#ignore_spaces').prop("checked", true);
+	} else {
+	    $('#ignore_spaces').prop("checked", false);
+	}
+    if( cookie_value.indexOf( "ib=1") != -1 ) {
+	    $('#ignore_in_brackets').prop("checked", true);
+	} else {
+	    $('#ignore_in_brackets').prop("checked", false);
+	}
+    if( cookie_value.indexOf( "fg=1") != -1 ) {
+	    $('#fix_glued_words').prop("checked", true);
+	} else {
+	    $('#fix_glued_words').prop("checked", false);
+	}
+    if( cookie_value.indexOf( "lb=1") != -1 ) {
+	    $('#linebreaks').prop("checked", true);
+	} else {
+	    $('#linebreaks').prop("checked", false);
+	}
+    if( cookie_value.indexOf( "lb2=1") != -1 ) {
+	    $('#linebreaks2').prop("checked", true);
+	} else {
+	    $('#linebreaks2').prop("checked", false);
+	}
+    if( cookie_value.indexOf( "f4t=1") != -1 ) {
+	    $('#fdiff4_tree_analysis').prop("checked", true);
+	} else {
+	    $('#fdiff4_tree_analysis').prop("checked", false);
+	}
+	if( (matches = cookie_value.match( /bt=(\d+)/)) != null ) {
+	  $('#basis_threshold').val(matches[1]);
+	} else {
+	  $('#basis_threshold').val(15);
+	}
+
+	// Set Google Diff Options
+	if( (matches = cookie_value.match( /gto=(\d+)/)) != null ) {
+	  $('#timeout').val(matches[1]);
+	} else {
+	  $('#timeout').val(20);
+	}
+	if( (matches = cookie_value.match( /gec=(\d+)/)) != null ) {
+	  $('#editcost').val(matches[1]);
+	} else {
+	  $('#editcost').val(4);
+	}	
+
+	// Set Google Cleanup
+    if( cookie_value.indexOf( "gs=1") != -1 ) {
+	    $('#semantic').prop("checked", true);
+	} else if( cookie_value.indexOf( "ge=1") != -1 ) {
+	    $('#efficiency').prop("checked", true);
+	} else {
+	    $('#raw').prop("checked", true);
+	}
+	
+}
+
+// import_settings
+//
+// converts the settings in the claims.js file into a cookie, for use by load_settings
+
+function import_settings( )
+{
+	// Should not happen, but sanity check anyway
+	if(typeof( settings ) == "undefined" ) {
+		return;
+	}
+	
+	// Favourite algorithm -- FDIFF4 by default
+	cookie_value = "alg=4";
+	if( typeof( settings.algorithm ) != "undefined") {
+		if ( settings.algorithm == 0 ) {
+			cookie_value = "alg=g";
+		} else if ( settings.algorithm == 3 ) {
+			cookie_value = "alg=3";
+		} 
+	}
+
+	// FDIFF options
+	if( typeof( settings.fdiff3_highlights ) != "undefined" ) {
+		cookie_value = cookie_value + "&f3h=" + settings.fdiff3_highlights;
+	}
+	if( typeof( settings.fdiff4_strikeout_highlights ) != "undefined" ) {
+		cookie_value = cookie_value + "&f4s=" + settings.fdiff4_strikeout_highlights;
+	}
+	if( typeof( settings.fdiff4_warn_claims ) != "undefined" ) {
+		cookie_value = cookie_value + "&f4c=" + settings.fdiff4_warn_claims;
+	}
+	if( typeof( settings.fdiff4_simplify_legend ) != "undefined" ) {
+		cookie_value = cookie_value + "&f4l=" + settings.fdiff4_simplify_legend;
+	}
+	if( typeof( settings.convert_claim_styles ) != "undefined" ) {
+		cookie_value = cookie_value + "&cnb=" + settings.convert_claim_styles;
+	}
+	if( typeof( settings.ignore_case ) != "undefined" ) {
+		cookie_value = cookie_value + "&ic=" + settings.ignore_case;
+	}
+	if( typeof( settings.eszett_normalization ) != "undefined" ) {
+		cookie_value = cookie_value + "&en=" + settings.eszett_normalization;
+	}
+	if( typeof( settings.ignore_hyphenation ) != "undefined" ) {
+		cookie_value = cookie_value + "&ih=" + settings.ignore_hyphenation;
+	}
+	if( typeof( settings.ignore_spaces ) != "undefined" ) {
+		cookie_value = cookie_value + "&is=" + settings.ignore_spaces;
+	}
+	if( typeof( settings.ignore_in_brackets ) != "undefined" ) {
+		cookie_value = cookie_value + "&ib=" + settings.ignore_in_brackets;
+	}
+	if( typeof( settings.fix_glued_words ) != "undefined" ) {
+		cookie_value = cookie_value + "&fg=" + settings.fix_glued_words;
+	}
+	if( typeof( settings.linebreaks ) != "undefined" ) {
+		cookie_value = cookie_value + "&lb=" + settings.linebreaks;
+	}
+	if( typeof( settings.linebreaks2 ) != "undefined" ) {
+		cookie_value = cookie_value + "&lb2=" + settings.linebreaks2;
+	}
+	if( typeof( settings.fdiff4_tree_analysis ) != "undefined" ) {
+		cookie_value = cookie_value + "&f4t=" + settings.fdiff4_tree_analysis;
+	}
+	if( typeof( settings.basis_threshold ) != "undefined" ) {
+		cookie_value = cookie_value + "&bt=" + settings.basis_threshold;
+	}
+
+	// Google Diff options
+	if( typeof( settings.timeout ) != "undefined" ) {
+		cookie_value = cookie_value + "&gto=" + settings.timeout;
+	}
+	if( typeof( settings.editcost ) != "undefined" ) {
+		cookie_value = cookie_value + "&gec=" + settings.editcost;
+	}
+	if( typeof( settings.semantic ) != "undefined" ) {
+		cookie_value = cookie_value + "&gs=" + settings.semantic;
+	}
+	if( typeof( settings.efficiency ) != "undefined" ) {
+		cookie_value = cookie_value + "&ge=" + settings.efficiency;
+	}
+
+	// Call load settings to do the work
+	load_settings( cookie_value );
+
+}
+
+function change_select( num ) {
+
+	var text_id = "#text" + num;
+	var select_id = "select" + num;
+	var lb = document.getElementById( select_id );
+	var index;
+
+    if( (!lb.disabled) && (index = lb.selectedIndex) >= 0 ) {
+		// Check if the input changed
+		if( (text_changed[ num ] == true) && (confirm( "Changes to text field will be lost -- are you sure?" ) == false) ) {
+			// Do not set new text, but select the previous one
+			lb.selectedIndex = lb_prev_index[ num ];
+		} else {
+		
+			// Convert back from the different listboxes to the main array of text sets
+			if( (num == 1) || (num == 2) ) {
+				if( index < claim_indexes.length ) {
+					index = claim_indexes[ index ];
+				}
+			} else {
+				if( index < desc_indexes.length ) {
+					index = desc_indexes[ index ];
+				}			
+			}
+			var text = applicationdata.claimsets[ index ].text;
+			$(text_id).val( text );
+			text_changed[ num ] = false;
+		}
+		lb_prev_index[ num ] = lb.selectedIndex;
+	}
+}
+
+
+function change_text( num ) {
+	text_changed[ num ] = true;
+}
+
+function clear_text( num ) {
+
+	var text_id = "#text" + num;
+	$(text_id).val( "" );
+
+	// Reset the listbox to select nothing
+	var select_id = "select" + num;
+	var lb = document.getElementById( select_id );
+	lb.selectedIndex = lb_prev_index[ num ] = -1;
+	
+	// Suppress change warning
+	text_changed[ num ] = false;
+
+}
+
+function insert_new_lines_text( num ) {
+
+	// Replace the text box with the a version that has newlines after each period.
+	var text_id = "#text" + num;
+	$(text_id).val( fdiff.insert_new_lines( $(text_id).val() ) );
+	// Enable change warning
+	text_changed[ num ] = true;
+}
+
+function regenerate_title( clms_or_desc ) {
+
+	var num1, num2;
+
+	// Determine whether to take the claims or descriptions as title
+	if( clms_or_desc == 'c' ) {
+		num1 = 1; num2 = 2;
+	} else {
+		num1 = 3; num2 = 4;
+	}
+
+	var select_id1 = "select" + num1;
+	var select_id2 = "select" + num2;
+	var lb1 = document.getElementById( select_id1 );
+	var lb2 = document.getElementById( select_id2 );
+
+	if( clms_or_desc == 'c' ) {
+		index1 = claim_indexes[ lb1.selectedIndex ];
+		index2 = claim_indexes[ lb2.selectedIndex ];
+	} else {
+		index1 = desc_indexes[ lb1.selectedIndex ];
+		index2 = desc_indexes[ lb2.selectedIndex ];
+	}
+	
+	// Set header for the old claims/paras
+    if( !lb1.disabled ) { 
+		if( lb1.selectedIndex == -1 ) {
+			fdiff.set_header_orig( "[Unknown]" );
+		} else {
+			fdiff.set_header_orig( applicationdata.claimsets[ index1 ].header );
+		}
+	}
+
+	// Set header for the new claims/paras
+	if( !lb2.disabled) { 
+		if( lb2.selectedIndex == -1 ) {
+			fdiff.set_header_new( "[Unknown]" );
+		} else {
+			fdiff.set_header_new( applicationdata.claimsets[ index2 ].header );
+		}
+	}
+
+}
+
+
+function launch( clms_or_desc ) {
+
+	$('*').css('cursor', 'wait');
+	window.setTimeout(function () { launch1( clms_or_desc ); }, 10);	// Allow browser to update GUI
+
+}
+
+function launch1( clms_or_desc ) {
+
+	// Take the texts from the input boxes
+	text1 = $('#text1').val();
+	text2 = $('#text2').val();
+	text3 = $('#text3').val();
+	text4 = $('#text4').val();
+	
+	// If both texts are still empty, fill them with some example text
+	if( clms_or_desc == 'c' ) {
+		if( (text1 == "") && (text2 == "") ) {
+		  load_example_text();
+		  text1 = $('#text1').val();
+		  text2 = $('#text2').val();
+		  text3 = $('#text3').val();
+		}
+	} else {
+		// Description button
+		if( (text3 == "") || (text4 == "") ) {
+			$('#output1').html( "No comparison performed -- cannot compare with empty description" );
+			$('#output2').html( "No comparison performed -- cannot compare with empty description" );
+			// Reset cursor to normal
+			$('*').css('cursor', 'default');
+			$("#time1").text( "0.000s" );
+			return;
+		}
+	}
+	
+	if ( $('#google').attr("checked") ) {
+
+	  /* run GoogleDiff */
+
+	  var d;
+	  var dmp = new diff_match_patch();
+	  dmp.Diff_Timeout = parseFloat( $('#timeout').val() );
+	  dmp.Diff_EditCost = parseFloat( $('#editcost').val() );
+
+	  var ms_start = (new Date()).getTime();
+	  
+	  if( clms_or_desc == 'c' ) {
+		d = dmp.diff_main(text1, text2);
+	  } else {
+		d = dmp.diff_main(text3, text4);
+	  }
+
+	  if ( $('#semantic').attr("checked") ) {
+		dmp.diff_cleanupSemantic(d);
+	  }
+
+	  if ( $('#efficiency').attr("checked") ) {
+		dmp.diff_cleanupEfficiency(d);
+	  }
+
+	  $('#output1').html( dmp.diff_prettyHtml(d) );
+
+	  var ms_end = (new Date()).getTime();
+	  $("#time1").text( (ms_end - ms_start)/1000 + "s" );
+
+	} else if( $('#fdiff3').attr("checked") ) {
+
+	  /* run fdiff3 */
+
+	  var d;
+	  var ms_start = ( new Date() ).getTime();
+
+	  fdiff.set_fdiff3_highlights( $('#fdiff3_highlights').attr("checked" ) );
+	  fdiff.set_ignore_hyphenation( $('#ignore_hyphenation').attr("checked") );
+	  fdiff.set_eszett_normalization( $('#eszett_normalization').attr("checked") );
+	  fdiff.set_insert_line_breaks_indents( $('#linebreaks').attr("checked") );
+	  fdiff.set_insert_line_breaks_indents2( $('#linebreaks2').attr("checked") );
+
+	  if( clms_or_desc == 'c' ) {
+		d = fdiff.diff(text1, text2);
+	  } else {
+		d = fdiff.diff(text3, text4);
+	  } 	  
+	  $('#output1').html( d );
+
+	  var ms_end = ( new Date() ).getTime();
+
+	  runtimeFdiff = ms_end - ms_start;
+	  $("#time1").text( (ms_end - ms_start)/1000 + "s" );
+
+	} else if( $('#fdiff4').attr("checked") ) {
+
+	  /* run fdiff4 */
+	  var d;
+	  var ms_start = ( new Date() ).getTime();
+
+	  fdiff.set_fdiff3_highlights( $('#fdiff3_highlights').attr("checked") );
+	  fdiff.set_fdiff4_strikeout_highlights( $('#fdiff4_strikeout_highlights').attr("checked") );
+	  fdiff.set_fdiff4_warn_claims( $('#fdiff4_warn_claims').attr("checked") );
+	  fdiff.set_fdiff4_simplify_legend( $('#fdiff4_simplify_legend').attr("checked") );
+	  fdiff.set_convert_claim_styles( $('#convert_claim_styles').attr("checked") );
+	  fdiff.set_ignore_hyphenation( $('#ignore_hyphenation').attr("checked") );
+	  fdiff.set_eszett_normalization( $('#eszett_normalization').attr("checked") );
+	  fdiff.set_ignore_case( $('#ignore_case').attr("checked") );
+	  fdiff.set_ignore_spaces( $('#ignore_spaces').attr("checked") );
+	  fdiff.set_ignore_in_brackets( $('#ignore_in_brackets').attr("checked") );
+	  fdiff.set_fix_glued_words( $('#fix_glued_words').attr("checked") );
+	  fdiff.set_fdiff4_tree_analysis( $('#fdiff4_tree_analysis').attr("checked") );
+	  fdiff.set_insert_line_breaks_indents( $('#linebreaks').attr("checked") );
+	  fdiff.set_insert_line_breaks_indents2( $('#linebreaks2').attr("checked") );
+	  fdiff.set_basis_threshold( parseFloat( $('#basis_threshold').val() ) );
+
+	  // Pass on the overrides
+	  fdiff.clear_claim_base_overrides();
+	  if( (claimbases = document.getElementsByClassName("claimbase")) != null ) {
+	    for( loop = 0; loop < claimbases.length; loop++ ) {
+	      if( claimbases[ loop ].value != "" ) {
+		    // Find the claim number
+			var claim_number = (claimbases[ loop ].name).slice( 9 );
+			fdiff.set_claim_base_override( claim_number, claimbases[ loop ].value );
+		  }
+	    }
+	  }
+	  
+	  // Pass on the "use description" flags
+	  fdiff.clear_use_desc_overrides();
+	  if( (use_desc_for_claims = document.getElementsByClassName("use_desc")) != null ) {
+	    for( loop = 0; loop < use_desc_for_claims.length; loop++ ) {
+	      if( use_desc_for_claims[ loop ].checked ) {
+		    // Find the claim number
+			var claim_number = (use_desc_for_claims[ loop ].name).slice( 8 );
+			fdiff.set_use_desc_override( claim_number );
+		  }
+	    }
+	  }	  
+
+	  // Set a new title, or keep the old title if that was the last thing that was changed
+	  regenerate_title( clms_or_desc );
+	  
+	  // Now run the DIFF!
+	  if( clms_or_desc == 'c' ) {
+	    d = fdiff.split_and_diff(text1, text2, text3);
+	  } else {
+	    d = fdiff.split_and_diff(text3, text4, "DESCMAGICFOO");
+	  }
+	  $('#output1').html( d );
+
+	  var ms_end = ( new Date() ).getTime();
+
+	  // Also update the filtered output (if it is active)
+	  if( output_mode == OUTPUT_MODE_CLEAN ) {
+		var filtered = fdiff.filter_table_contents( $('#output1').html() );
+		$('#output2').html( filtered  );
+	  }	else if( output_mode == OUTPUT_MODE_MONO ) {
+		var filtered = fdiff.filter_table_contents( $('#output1').html() );
+		var filtered_mono = fdiff.filter_table_colours( filtered );
+		$('#output3').html( filtered_mono );
+	  }
+	  
+	  runtimeFdiff = ms_end - ms_start;
+	  $("#time1").text( (ms_end - ms_start)/1000 + "s" );
+
+	}
+	
+	// Reset cursor to normal
+	$('*').css('cursor', 'default');
+	
+}
+
+function load_and_launch( clms_or_desc ) {
+	load_settings();
+	launch( clms_or_desc );
+}
+
+function launch_and_scroll( clms_or_desc ) {
+	launch( clms_or_desc );
+	var element_to_scroll_to = document.getElementById('Button1');
+	element_to_scroll_to.scrollIntoView();	
+}
+
+
+function load_example_text() {
+
+	claims_orig = "1. A method for comparing two claim sets by highlighting the changes of the newer set with respect to the older set.\n" +
+		"2. The method of claim 1, wherein the left window contains the original claims.\n" +
+		"3. The method of claim 2, wherein the right window contains the amended claims.\n" +
+		"4. The method of claim 1, wherein the amendments are highlighted in different colours to indicate the original claims.\n" +
+		"5. The method of claim 1, wherein example claim sets are provided.";
+	claims_new = "1. A method for comparing two claim sets by highlighting the changes of the newer set with respect to the older set, wherein the left window contains the original claims, and the right window contains the amended claims.\n" +
+		"2. The method of claim 1, wherein the amendments are highlighted in different colours to indicate the original claims.\n" +
+		"3. The method of claim 1, wherein example claim sets are provided automatically when no texts are entered, and basis is also found in the description."; 
+	desc_orig = "[0001] This is the first description paragraph.\n" + 
+		"[0002] This is the second description paragraph, wherein it is disclosed that example claim sets can also be provided automatically when no texts are entered.\n" +
+		"[0003] The third paragraph gives some more details.";
+
+	// Do not remove or edit this line, FLAG FOR TEST SUITE GENERATOR
+		
+	// Fill in the values 
+	$("#text1").val( claims_orig );
+	$("#text2").val( claims_new );
+	$("#text3").val( desc_orig );
+}
+
+function show_preparation_help() {
+	var url = window.location.href;
+	// Show some context-sensitive help (fdiff_config is not defined yet when this is called
+	if( url.search( /fdiffpreparation.html/ ) > 0 ) {		
+		document.write( "<li><b>How do I start FDIFF with blank input boxes?</b>" +
+			"<BR>Use the link at the right top ('Classic FDIFF') and, optionally, bookmark it.</li>" );
+		document.write( "<li><b>The claim set that I want to use is not available!</b>" +
+			"<BR>FDIFF uses ..TRI QUOTE to get as many claim sets as possible; however, sometimes they are simply not there. See the <a href=\"disCLAIMer.htm\">disclaimer</a>.</li>" );
+		document.write( "<li><b>I accidentally compared the wrong claim sets and now I missed an Art. 123(2) EPC problem!</b>" +
+			"<BR>Selecting the correct claim sets is the responsibility of the examiner. The tool provides a best " +
+			"effort at presenting all the information found in different fulltext resources, but due to the " +
+			"unreliability of these fulltext resources, the correct information is not always available.</li>" );
+	}
+}
+
+</script>
+</head>
+
+<BODY font>
+
+<DIV>
+
+<DIV class="noprint" id="fdiff_version" style="float: right">
+<font style="BACKGROUND-COLOR: red" size="+3">FDIFF requires Javascript -- please "Allow blocked content"</font>
+</DIV>
+
+<DIV class="noprint">
+<h2><span style="COLOR: blue">FDIFF</span>: A tool to compare two claim sets or texts <A HREF="#help">[?]</A></h2>
+</DIV>
+
+</div>
+
+<div style="clear:both"></div>
+
+<form class="print" id="Form1" onsubmit="return false" action="#">
+
+<div class="print" style="overflow:hidden">
+
+ <div class="noprint" style="float:left; width:50%">
+   <div class="noprint">Original claim set:
+	 <select id="select1" style="listbox" title="Select the original claim set" onchange="change_select(1);"></select>
+     <input id="clear1" onclick="clear_text(1);" title="Clear contents" value="x" type="button">
+	 <input id="spacing1" onclick="insert_new_lines_text(1);" title="Separate claims by newlines" value="/" type="button">
+   </div>
+   <div class="noprint"><textarea id="text1" class="input" onchange="change_text(1)"></textarea></div>
+ </div>
+ <div class="noprint" style="float:right; width:49%">
+   <div class="noprint">Amended claim set:
+     <select id="select2" style="listbox" title="Select the amended claim set" onchange="change_select(2);"></select>
+     <input id="clear2" onclick="clear_text(2);" title="Clear contents" value="x" type="button">
+     <input id="spacing2" onclick="insert_new_lines_text(2);" title="Separate claims by newlines" value="/" type="button">
+   </div>
+   <div class="noprint"><textarea id="text2" class="input" onchange="change_text(2)"></textarea></div>
+ </div>
+ <div style="clear:both;"></div>
+ <div class="noprint" style="float:left; width:50%">
+   <div class="noprint"><BR>Original description:
+     <select id="select3" style="listbox" title="Select the original description" onchange="change_select(3);"></select>
+     <input id="clear3" onclick="clear_text(3);" title="Clear contents" value="x" type="button">
+     <input id="spacing3" onclick="insert_new_lines_text(3);" title="Separate description paragraphs by newlines" value="/" type="button">
+   </div>
+   <div class="noprint"><textarea id="text3" class="input" style="height: 100px" onchange="change_text(3)"></textarea></div>
+ </div>
+ <div class="noprint" style="float:right; width:49%">
+   <div class="noprint"><BR>Amended description (optional):
+     <select id="select4" style="listbox" title="Select the amended description" onchange="change_select(4);"></select>
+     <input id="clear4" onclick="clear_text(4);" title="Clear contents" value="x" type="button">
+     <input id="spacing4" onclick="insert_new_lines_text(4);" title="Separate description paragraphs by newlines" value="/" type="button">
+   </div>
+   <div class="noprint"><textarea id="text4" class="input" style="height: 100px" onchange="change_text(4)"></textarea></div>
+ </div>
+ <div style="clear:both;"></div>
+ <div class="noprint">
+    <p>
+      <input id="Button1" onclick="launch( 'c' );" value="Compare CLMS" type="button" accesskey="C" title="ALT + SHIFT + C">
+      <input id="Button2" onclick="load_and_launch( 'c' );" value="Load settings & Compare CLMS" type="button" accesskey="L" title="ALT + SHIFT + L">
+      <input id="Button3" onclick="launch( 'd' );" value="Compare DESC" type="button" accesskey="D" title="ALT + SHIFT + D"> &vert;
+      <input id="Button10" onclick="cycle_line_spacing();" value="Cycle line spacing" type="button">
+      <input id="Button4" onclick="window.print();" value="Print" type="button" title="CTRL + P"> &vert;
+      <input id="Button5" onclick="cycle_output_mode();" value="Cycle output mode" type="button" accesskey="T" title="ALT + SHIFT + T">
+      <input id="Button9" onclick="copyCleanOutput();" value="Copy clean" type="button">
+      <input id="Button10" onclick="copyMonoOutput();" value="Copy monochrome" type="button">
+	</p>
+ </div> 
+ <div class="print" style="float:left; width:100%">
+   <div id="output1" class="output print" readonly="">(Codified difference will appear here)</div>
+   <div id="output2" class="output_clean noprint" readonly="">(Codified difference without columns will appear here)</div>
+   <div id="output3" class="output_clean noprint" readonly="">(Codified difference without columns or colours will appear here)</div>
+   <div id="time1" class="time noprint">&nbsp;</div>
+ </div>
+</div>
+
+<div class="noprint">
+<p>
+<input id="Button1a" onclick="launch_and_scroll( 'c' );" value="Compare CLMS ^" type="button" accesskey="S" title="ALT + SHIFT + S">
+<input id="Button2a" onclick="load_and_launch( 'c' );" value="Load settings & Compare CLMS" type="button" title="ALT + SHIFT + L">
+<input id="Button3a" onclick="launch_and_scroll( 'd' );" value="Compare DESC ^" type="button" accesskey="A" title="ALT + SHIFT + A"> &vert;
+<input id="Button6"  onclick="load_settings();" value="Load settings" type="button">
+<input id="Button7"  onclick="save_settings();" value="Save settings" type="button"> &vert;
+<input id="Button10a" onclick="cycle_line_spacing();" value="Cycle line spacing" type="button">
+<input id="Button4a" onclick="window.print();" value="Print" type="button" title="CTRL + P"> &vert;
+<input id="Button5a" onclick="cycle_output_mode();" value="Cycle output mode" type="button" accesskey="T" title="ALT + SHIFT + T">
+<input id="Button9a" onclick="copyCleanOutput();" value="Copy clean" type="button">
+<input id="Button10a" onclick="copyMonoOutput();" value="Copy monochrome" type="button">
+<p>
+
+<DIV style="width:100%">
+<h3>Select algorithm:</h3>
+ <DIV>
+  <DIV><input id="fdiff4" checked="checked" name="option" type="radio"> <label for="fdiff4">FDIFF4</label><label for="fdiff4"> - Compares sets of claims or numbered paragraphs, claim-by-claim and word-by-word, shows best basis of amendments</label></DIV>
+  <DIV><input id="fdiff3" name="option" type="radio"> <label for="fdiff3">FDIFF3</label><label for="fdiff3"> - Compares texts word-by-word</label></DIV>
+  <DIV><input id="google" name="option" type="radio"> <label for="google">Google</label><label for="google">  - Compares texts character-by-character</label></DIV>
+ </div>
+</DIV>
+<p>
+<DIV style="width:100%">
+<DIV style="width:50%;float:left">
+<H4>FDIFF Options</H4>
+<dl>
+  <dt><input id="fdiff3_highlights" name="fdiff3_highlights" type="checkbox" checked> <label for="fdiff3_highlights">Highlight FDIFF3 changes</label></dt>
+  <dt><input id="fdiff4_strikeout_highlights" name="fdiff4_strikeout_highlights" type="checkbox" checked> <label for="fdiff4_strikeout_highlights">Highlight FDIFF4 strike-out in red</label></dt>
+  <dt><input id="fdiff4_warn_claims" name="fdiff4_warn_claims" type="checkbox" checked> <label for="fdiff4_warn_claims">Warn about irregularly numbered claim sets</label></dt>
+  <dt><input id="fdiff4_simplify_legend" name="fdiff4_simplify_legend" type="checkbox" checked> <label for="fdiff4_simplify_legend">Simplify base claim legend (only one colour per claim)</label></dt>
+  <dt><input id="convert_claim_styles" name="convert_claim_styles" type="checkbox" checked> <label for="convert_claim_styles">Convert alternative claim formats (*), e.g. [0023], 5), 7/.</label></dt>
+  <dt><input id="ignore_case" name="ignore_case" type="checkbox"> <label for="ignore_case">Ignore case (*), e.g. CLAim == Claim</label></dt>
+  <dt><input id="eszett_normalization" name="eszett_normalization" type="checkbox"> <label for="eszett_normalization">Filter out (normalize) eszett (ß), e.g. Maßgabe => Massgabe</label></dt>
+  <dt><input id="ignore_hyphenation" name="ignore_hyphenation" type="checkbox"> <label for="ignore_hyphenation">Filter out hyphenation (*,#), e.g. Verbes- serung => Verbesserung</label></dt>
+  <dt><input id="ignore_spaces" name="ignore_spaces" type="checkbox"> <label for="ignore_spaces">Filter out spaces near brackets, commas, periods and (semi)colons, e.g. (20 ) => (20)</label></dt>
+  <dt><input id="ignore_in_brackets" name="ignore_in_brackets" type="checkbox"> <label for="ignore_in_brackets">Filter out reference signs (#), e.g. (29a; 29b)</label></dt>
+  <dt><input id="fix_glued_words" name="fix_glued_words" type="checkbox"> <label for="fix_glued_words">Filter out (un)joining of word pairs, 
+						e.g. <strike><font style="background-color: OrangeRed">claim set</font></strike><u><font style="background-color: yellow">claimset</font></u> => claimset</label></dt>
+  <dt><input id="linebreaks" name="linebreaks" type="checkbox"> <label for="linebreaks">Insert line-breaks after <b>(semi-)colons</b> in the output (clears existing linebreaks)</label></dt>
+  <dt><input id="linebreaks2" name="linebreaks2" type="checkbox"> <label for="linebreaks2">Insert line-breaks after <b>commas</b> in the output (clears existing linebreaks)</label></dt>
+  <dt><input id="fdiff4_tree_analysis" name="fdiff4_tree_analysis" type="checkbox"> <label for="fdiff4_tree_analysis">Do claim tree analysis</label></dt>
+</dl>
+Options marked with (*) may impact performance; options marked with (#) are not used for description.
+<p>
+
+FDIFF4 anti-cluttering:
+<input id="basis_threshold" value="25" maxlength="5" size="3" type="text"> characters
+<br>Sets the minimum length of text fragments for which basis should be found in the
+original claim set. Value is clipped between 5 and 50. Setting this too low causes the
+algorithm to find support for even the smallest words and gives a very cluttered result.</p>
+
+</DIV>
+<DIV style="width:49%;float:right">
+<H4>Google Diff Options</H4>
+<dl>
+  <dt><input id="raw" checked="checked" name="cleanup" type="radio"> <label for="raw">No Cleanup</label></dt>
+  <dt><input id="semantic" name="cleanup" type="radio"> <label for="semantic">Semantic Cleanup</label></dt>
+  <dt><input id="efficiency" name="cleanup" type="radio"> <label for="efficiency">Efficiency Cleanup</label>, edit cost: <input id="editcost" value="4" maxlength="5" size="3" type="text"> </dt>
+</dl>
+
+<p><b>Timeout:</b>
+<input id="timeout" value="20" maxlength="5" size="3" type="text"> seconds<br>If the 
+mapping phase of the diff computation takes longer than this, then the 
+computation is truncated and the best solution to date is returned. While 
+guaranteed to be correct, it may not be optimal. A timeout of '0' allows for 
+unlimited computation.</p>
+
+</DIV>
+</DIV>
+</div>
+
+</form>
+
+<div class="noprint" style="float:left">
+<hr class="noprint">
+
+<A NAME="help"></A>
+<H3>Help:</H3>
+<b><span style="COLOR: blue">FDIFF</span></b> takes two texts and finds the differences.
+The output will be presented in the yellow container using
+<span style="TEXT-DECORATION: underline">underline</span> and <span style="TEXT-DECORATION: line-through">strikethrough</span>
+text decorations for added and deleted text. For sets of claims (or numbered paragraphs), FDIFF4 compares each (amended) claim 
+on the right against each (original) claim on the left to identify a "best match" or "base claim".
+The amendments with respect to this best match are then again found in the claims on the left, and 
+<font style="BACKGROUND-COLOR:cyan">differently</font> <font style="BACKGROUND-COLOR:lime">colored</font> <font style="BACKGROUND-COLOR:orange">highlights</font> are used to identify 
+which original claim provides the best basis for each amendment, with a <font style="BACKGROUND-COLOR:yellow">yellow highlight</font>
+being used for amendments that have no identifiable basis.
+
+The output can be copied to Trimaran or Word for further editing, and can be printed directly from your browser (Ctrl-P).
+
+<BR><BR>
+<u>First time with FDIFF?</u> Just leave the edit boxes empty and click "Compare". The tool will generate some example claim sets and show the comparison.
+
+<p></p>
+
+<hr class="noprint">
+
+
+<A NAME="troubleshooting"></A>
+<h3>Troubleshooting:</h3>
+<ul>
+<li><b>Highlighted colours don't show when you print?</b> 
+<BR>In Chrome: Press CTRL+P to open the print-dialog, select "More settings", scroll to the bottom and select "Background Graphics".
+<BR>In Firefox: Open Menu (three horizontal lines icon in the top-right), select "Print", Press Alt-U, select "Print Background Colours and Images".
+<BR>In Internet Explorer: Press Alt-R (or Alt-X -> P), then Page Setup, select the option "Print background colours and images".
+<li><b>Browser asks to stop the script after a few seconds?</b>
+<BR>Click "No" or use Firefox.</li>
+<li><b>Claims numbers are not correctly identified in FDIFF4, or a claim text is cut off where a number used to be?</b>
+<BR>You can detect this problem by checking the last two lines of the output, e.g. "Original claims detected: 1-5" and "Amended claims detected: 1-3".
+<BR>This problem is usually due to misinterpretation of claim heading numbers. To 
+split the claims, the software looks
+for patterns of digits with a period, slash, dash or closing parenthesis immediately following the digit(s),
+and a period and a whitespace immediately before the digit(s).
+The misinterpretation can happen if claims are not numbered according to any of the expected patterns, e.g. 
+due to OCR hickups (e.g. "S. A method ..." or "22 An apparatus ..."), missing whitespace (e.g. "1. Method.2. Apparatus") 
+or some number in the claim text mistakenly being taken for a claim number. 
+In the first case, manually correct the OCR hickup, and re-run the comparison.
+In the second case, insert whitespace before the claim numbers.
+In the third case, try changing the number to a non-number.
+If that doesn't help, and your claims are numbered in a standard format (e.g. "1. Apparatus. 2. Method."),
+try turning off the "Convert alternative claim formats" option above, to reduce the risk of misinterpretation.</li>
+<li><b>Saving settings doesn't work?</b>
+<BR>Make sure that cookies are enabled.</li>
+<li><b>Best basis for independent claims not correctly found?</b>
+<BR>This is due to FDIFF4 finding the original claim that has the most words in common with
+each amended claim (although a small penalty is applied for missing segments). So it can happen 
+that an amended method claim has more words in common with the original apparatus 
+claim than it has with the original method claim. Use the manual override box in 
+the "Base override" column, or try running FDIFF on subsets of claims, 
+e.g. old claims 1-10 vs new claims 1-9 first, and then old claims 11-15 vs new claims 10-13.</li>
+<li><b>How to use manual base overrides?</b>
+<br>The third output column allows you to override the base claim, i.e.
+the original claim against which the current claim is compared. You can fill in a claim number
+in the edit box or do more complex things, as shown in the table below.
+The two numbers below the edit box give the second-best and third-best original claims and their relative
+scores with respect to the automatically found one, e.g. "2=55%" means that claim 2 has 55% of the score of
+the automatically found claim. This column is not printed.
+<TABLE border="1">
+<TR><TH>Pattern</TH><TH>Effect</TH></TR>
+<TR><TD>(empty)</TD><TD>Main basis and amendments found automatically</TD></TR>
+<TR><TD>0</TD><TD>No main basis claim, amendments found automatically (useful for large deleted/red blocks)&nbsp;&nbsp;</TD></TR>
+<TR><TD>10</TD><TD>Set claim 10 as main basis, amendments found automatic</TD></TR>
+<TR><TD>10!</TD><TD>Set claim 10 as main basis, do not find basis for amendments</TD></TR>
+<TR><TD>10!8</TD><TD>Set claim 10 as main basis, do not find basis for amendments in claim 8</TD></TR>
+<TR><TD>10!8-11</TD><TD>Set claim 10 as main basis, do not find basis for amendments in claims 8-11</TD></TR>
+<TR><TD>10!8-11,[20]-[30]</TD><TD>Set claim 10 as main basis, do not find basis for amendments in claims 8-11 or paragraphs [20]-[30]</TD></TR>
+<TR><TD>10&amp;3-8</TD><TD>Set claim 10 as main basis, find basis for amendments only in claims 3-8</TD></TR>
+<TR><TD>!8</TD><TD>Main basis automatic, do not find basis for amendments in claim 8</TD></TR>
+<TR><TD>&amp;3-8,[20]-[30]</TD><TD>Main basis automatic, find basis for amendments only in claims 3-8<br>and paragraphs [20]-[30] if 'Use Desc' button is selected</TD></TR>
+<TR><TD>&amp;3-8</TD><TD>Main basis automatic, find basis for amendments only in claims 3-8<br>and *all* paragraphs if 'Use Desc' button is selected</TD></TR>
+<TR><TD>!</TD><TD>Main basis automatic, do not find basis for amendments</TD></TR>
+<TR><TD>0!</TD><TD>Do not find basis for anything</TD></TR>
+</TABLE><BR>
+Note that the override box is cleared when an invalid or inconsequential override pattern is found.</li>
+<li><b>Having trouble seeing structure in the output?</b>
+<BR>Try the "indents and line-breaks" option.</li>
+<li><b>How about confidentiality?</b>
+<BR>Since all code, including the Google algorithm, is run on your own computer, there is <b>no confidentiality problem</b>.</li>
+<script language="Javascript">show_preparation_help();</script>
+<li><b>Did you find a bug?</b>
+<BR>Please report it to Frank de Jong. Please make sure you have the latest version by running ..fdiff. 
+When reporting a bug, please include the version of FDIFF you are using, the claim sets or the file you are working on, and preferably a screenshot.</li>
+</ul>
+
+<hr class="noprint">
+
+<h3>Further information:</h3>
+
+<ul>
+<li>The original FDIFF engine was developed by Frank de Jong in 2009 and converted to Javascript in November 2012, with FDIFF4 appearing in August 2013.
+<BR>Automatic claim retrieval appeared in October 2017, thanks to Madou Keita (..FDIFF) and Ian Chapple (..TRI QUOTE).
+<BR>Thanks to Madou Keita, Ian Chapple, Thomas Gries, Wolfgang Sohrt, Bodo Kerner, Stephan Erbel, José Ferro Pozo, Emmanuel Flamme, Stefan Demin, Tommi Järvi, 
+Axel Martinez Möller, Helmar Liess and many others for useful ideas and suggestions.
+</li>
+<li>See the <a href="http://confluence-p.internal.epo.org/pages/viewpage.action?pageId=104474072">Confluence Wiki page</A> for a lot of extra documentation.</li>
+<li>This <a href="doc/fdiff.pdf">document</a> explains the basics of FDIFF3 and FDIFF4.</li>
+<li>A <a href="doc/OnePager_fdiff_v09.pdf">One-Pager</a> written by Johan Bengtsson (July 2015) is also available.</li>
+<li><a href="http://ckt.internal.epo.org/Tips/view.htm?id=1435">Daytip 1435</a>: <i>DiffTri: Tool to paste formatted differences into Trimaran.</i></li>
+<li><a href="http://ckt.internal.epo.org/Tips/view.htm?id=2141">Daytip 2141</a>: <i>Checking Art. 123(2) made easy.</i> Best rated tip of the month July 2014.</li>
+<li><a href="http://ckt.internal.epo.org/Tips/view.htm?id=3257">Daytip 3257</a>: <i>Checking claims for Art. 123(2) compliance made easy.</i> Tip of the month April 2018, explaining integration with preparation ..FDIFF. </li>
+<li><a href="http://ckt.internal.epo.org/Tips/view.htm?id=3467">Daytip 3467</a>: <i>Article 123(2) compliance check made easier again.</i> Tip of the month September, explaining latest features.</li>
+<li>Related to several <a href="http://q/findprop:diff">"diff" proposals</a> in the Suggestionbox 
+(<a href="http://main23.internal.epo.org/projects/sb/suggestionbox.nsf/SearchResults/24A2264D809263FDC125763C0031776B?opendocument">C20041228</a>, 
+<a href="http://main23.internal.epo.org/projects/sb/suggestionbox.nsf/SearchResults/BCB5694BEF0E4A89C12576690032CAAE?opendocument">SB20090092</a>)</li>
+<li>This page was initially set up on 1 December 2009 and last updated on <script language="Javascript">document.write(document.lastModified);</script>.</li>
+<li>Please send your feedback to <a href="mailto:frankdejong@epo.org">Frank de Jong</a>.</li>
+</ul>
+
+<hr>
+<h3>Latest features</h3>
+<ul>
+<li>Mouse-over on highlighted amended parts gives full claim text of original claim (Done in v4.50).</li>
+<li>Claim base override with 'positive' basis limitations (e.g. "only in claims 1, 3 and 5"), and/or ranges (Done in v4.51).</li>
+<li>Comparison against description (Done in v4.52).</li>
+<li>Output table editing (Was: Insertion of manual line-breaks (e.g. replace //, || or \\)) (Madou Keita) (Done in v4.57)</li>
+<li>Mouse-over on claim tree or base claim gives full claim text in pop-up. (Done in v4.57)</li>
+<li>Suppression of "red overflow" for deleted / strike-out passages (Madou Keita) (Done in v4.58).</li>
+<li>Automatic scrolling to top of output table (Madou Keita) (Done in v4.58).</li>
+<li>Claim set insertion in one step with warning if anything changed (Done in v4.60).</li>
+<li>Comparison of descriptions (Done in v4.62).</li>
+<li>Print preview with cleaned up output for copy-paste to e.g. Word (Madou Keita) (Done in v4.63)</li>
+<li>Copy output button (Madou Keita) (Done in v4.64)</li>
+<li>Score words like "according" and "claim" at 0 for base claim determination (Madou Keita) (Done in v4.64)</li>
+<li>Fix word gluing with words with diacritics (Madou Keita) (Done in v4.64)</li>
+<li>Keep newlines in FDIFF3/FDIFF4, unless newlines are added by one of the linebreak options (Done in v4.65)</li>
+<li>Indicate which claimset has a dependency problem in Claim tree (Ian Chapple) (Done in v4.65)</li>
+<li>Highlighting now also copies to Martha (Done in v4.65)</li>
+<li>Claim tree shows base and support claims as superscripts (Madou Keita) (Done in v4.66)</li>
+<li>Exclusion and inclusion for claim basis also on paragraphs (Madou Keita) (Done in v4.67)</li>
+<li>Chrome support (HTML5 + LocalStorage instead of cookies) (Done in v4.68)</li>
+<li>Monochrome output (Madou Keita / Ian Chapple) (Done in v4.70)</li>
+</ul>
+<hr>
+<h3>To do list</h3>
+<ul>
+<li>Catch Chrome blocking cookies</li>
+<li>Put original claims in new last column</li>
+<li>Override base finding order, e.g. first look for basis for the amendments in claim 2, then in claim 5 (Dominique Andlauer)</li>
+<li>Give support claim numbers inside the amendment block, e.g. "1. Apparatus with a |<font style="background-color:cyan"><U>newly added [6]</U></font>| feature (Wolfgang Sohrt)"</li>
+<li>Give claim base legend also as natural language, for copy-pasting to Votum (Tamas Regert).</li>
+<li>Output formatting, e.g. fonts, line spacing (Helmar Lies).</li>
+<li>Overhaul of claim splitting based on expected monotonously increasing sequences of numbers.</li>
+<li>Use of claim tree analysis to improve best guess for base claims, or warn about features moving into other branches (embodiments).</li>
+<li>Correct recognition of claim tree "nach einem der vorherigen <b>Verfahrens</b>ansprüche".</li>
+</ul>
+</div>
+
+</body>
+</html>
