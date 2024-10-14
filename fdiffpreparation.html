@@ -1,5 +1,6 @@
 <!doctype html>
-<html><head>
+<html lang="en">
+<head>
 <title>FDIFF: Difference of texts or claims</title>
 <meta charset="utf-8">
 <meta http-equiv="expires" content="0">
@@ -1125,7 +1126,7 @@ function show_preparation_help() {
       <input id="Button4" onclick="window.print();" value="Print" type="button" title="CTRL + P"> &vert;
       <input id="Button5" onclick="cycle_output_mode();" value="Cycle output mode" type="button" accesskey="T" title="ALT + SHIFT + T">
       <input id="Button9" onclick="copyCleanOutput();" value="Copy clean" type="button">
-      <input id="Button10" onclick="copyMonoOutput();" value="Copy monochrome" type="button">
+      <input id="Button11" onclick="copyMonoOutput();" value="Copy monochrome" type="button">
 	</p>
  </div> 
  <div class="print" style="float:left; width:100%">
@@ -1147,7 +1148,7 @@ function show_preparation_help() {
 <input id="Button4a" onclick="window.print();" value="Print" type="button" title="CTRL + P"> &vert;
 <input id="Button5a" onclick="cycle_output_mode();" value="Cycle output mode" type="button" accesskey="T" title="ALT + SHIFT + T">
 <input id="Button9a" onclick="copyCleanOutput();" value="Copy clean" type="button">
-<input id="Button10a" onclick="copyMonoOutput();" value="Copy monochrome" type="button">
+<input id="Button11a" onclick="copyMonoOutput();" value="Copy monochrome" type="button">
 <p>
 
 <DIV style="width:100%">
@@ -1173,8 +1174,7 @@ function show_preparation_help() {
   <dt><input id="ignore_hyphenation" name="ignore_hyphenation" type="checkbox"> <label for="ignore_hyphenation">Filter out hyphenation (*,#), e.g. Verbes- serung => Verbesserung</label></dt>
   <dt><input id="ignore_spaces" name="ignore_spaces" type="checkbox"> <label for="ignore_spaces">Filter out spaces near brackets, commas, periods and (semi)colons, e.g. (20 ) => (20)</label></dt>
   <dt><input id="ignore_in_brackets" name="ignore_in_brackets" type="checkbox"> <label for="ignore_in_brackets">Filter out reference signs (#), e.g. (29a; 29b)</label></dt>
-  <dt><input id="fix_glued_words" name="fix_glued_words" type="checkbox"> <label for="fix_glued_words">Filter out (un)joining of word pairs, 
-						e.g. <strike><font style="background-color: OrangeRed">claim set</font></strike><u><font style="background-color: yellow">claimset</font></u> => claimset</label></dt>
+  <dt><input id="fix_glued_words" name="fix_glued_words" type="checkbox"> <label for="fix_glued_words">Filter out (un)joining of word pairs, e.g. <strike><font style="background-color: OrangeRed">claim set</font></strike><u><font style="background-color: yellow">claimset</font></u> => claimset</label></dt>
   <dt><input id="linebreaks" name="linebreaks" type="checkbox"> <label for="linebreaks">Insert line-breaks after <b>(semi-)colons</b> in the output (clears existing linebreaks)</label></dt>
   <dt><input id="linebreaks2" name="linebreaks2" type="checkbox"> <label for="linebreaks2">Insert line-breaks after <b>commas</b> in the output (clears existing linebreaks)</label></dt>
   <dt><input id="fdiff4_tree_analysis" name="fdiff4_tree_analysis" type="checkbox"> <label for="fdiff4_tree_analysis">Do claim tree analysis</label></dt>
@@ -1239,11 +1239,10 @@ The output can be copied to Trimaran or Word for further editing, and can be pri
 <h3>Troubleshooting:</h3>
 <ul>
 <li><b>Highlighted colours don't show when you print?</b> 
-<BR>In Chrome: Press CTRL+P to open the print-dialog, select "More settings", scroll to the bottom and select "Background Graphics".
-<BR>In Firefox: Open Menu (three horizontal lines icon in the top-right), select "Print", Press Alt-U, select "Print Background Colours and Images".
+<BR>In Chrome and MS Edge: Press CTRL+P to open the print-dialog, select "More settings", scroll to the bottom and select "Background Graphics".
 <BR>In Internet Explorer: Press Alt-R (or Alt-X -> P), then Page Setup, select the option "Print background colours and images".
 <li><b>Browser asks to stop the script after a few seconds?</b>
-<BR>Click "No" or use Firefox.</li>
+<BR>Click "No" -- the script needs more time to process all the input.</li>
 <li><b>Claims numbers are not correctly identified in FDIFF4, or a claim text is cut off where a number used to be?</b>
 <BR>You can detect this problem by checking the last two lines of the output, e.g. "Original claims detected: 1-5" and "Amended claims detected: 1-3".
 <BR>This problem is usually due to misinterpretation of claim heading numbers. To 
