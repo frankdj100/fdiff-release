@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-<title>FDIFF: Difference of texts or claims</title>
 <meta charset="utf-8">
+<title>FDIFF: Difference of texts or claims</title>
 <meta http-equiv="expires" content="0">
 <meta http-equiv="x-ua-compatible" content="IE=Edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script language="JavaScript" type="text/javascript" src="lib/jquery-1.8.2.min.js"></script>
 <script language="JavaScript" type="text/javascript" src="lib/diffPatchTextModif.js"></script>
 <script language="JavaScript" type="text/javascript" src="fdiff.js"></script>
@@ -26,7 +27,7 @@ ul {
 }
 
 .listbox {
-	height: 1em;
+	height: 1.4em;
 }
 
 .title {
@@ -128,6 +129,8 @@ $(document).ready(function() {
 		fdiff_config = "beta";
 	} else if( url.search( /fdiffpreparation.html/ ) > 0 ) {
 		fdiff_config = "preparation";
+	} else if( url.search( /pyfdiff.html/ ) > 0 ) {
+		fdiff_config = "pyfdiff";
 	} else {
 		fdiff_config = "release";
 	}
@@ -147,7 +150,9 @@ $(document).ready(function() {
 	} else if( fdiff_config == "test" ) {
 		version_text = "Version: " + fdiff.get_version() + " (Test Suite)";
 	} else if( fdiff_config == "release" ) {
-		version_text = "Version: " + fdiff.get_version() + " (Release)";
+		version_text = "Version: " + fdiff.get_version() + " (Stand-alone)";
+	} else if( fdiff_config == "pyfdiff" ) {
+		version_text = "Version: " + fdiff.get_version() + " (pyfdiff)";
 	} else {
 		version_text = "Version: " + fdiff.get_version();
 	}
@@ -173,7 +178,7 @@ $(document).ready(function() {
 	}	
 	
 	// Automatically run the script if the auto parameter is set
-	if( (url.search(/compare=yes/) != -1) || (fdiff_config == "preparation") || (fdiff_config == "test") || (fdiff_config == "alpha") ){
+	if( (url.search(/compare=yes/) != -1) || (fdiff_config == "preparation") || (fdiff_config == "test") || (fdiff_config == "alpha") || (fdiff_config == "pyfdiff") ){
 		launch( 'c' );
 	}
 	
@@ -326,7 +331,7 @@ function selectElementContents(el) {
 function initialise_listboxes( fdiff_config ) {
 
 	// When more claimsets are defined, put the other claim sets in the listboxes
-	if( ((fdiff_config == "preparation") || (fdiff_config == "alpha" )) && 
+	if( ((fdiff_config == "preparation") || (fdiff_config == "alpha" ) || (fdiff_config == "pyfdiff")) && 
 		(typeof( applicationdata ) != "undefined") ) 
 	{
 	  var lb1 = document.getElementById("select1"); 
@@ -1085,36 +1090,36 @@ function show_preparation_help() {
 
  <div class="noprint" style="float:left; width:50%">
    <div class="noprint">Original claim set:
-	 <select id="select1" style="listbox" title="Select the original claim set" onchange="change_select(1);"></select>
+	 <select id="select1" class="listbox" title="Select the original claim set" onchange="change_select(1);"></select>
      <input id="clear1" onclick="clear_text(1);" title="Clear contents" value="x" type="button">
 	 <input id="spacing1" onclick="insert_new_lines_text(1);" title="Separate claims by newlines" value="/" type="button">
    </div>
-   <div class="noprint"><textarea id="text1" class="input" onchange="change_text(1)"></textarea></div>
+   <div class="noprint"><textarea id="text1" class="input" onchange="change_text(1)" aria-label="Original claims"></textarea></div>
  </div>
  <div class="noprint" style="float:right; width:49%">
    <div class="noprint">Amended claim set:
-     <select id="select2" style="listbox" title="Select the amended claim set" onchange="change_select(2);"></select>
+     <select id="select2" class="listbox" title="Select the amended claim set" onchange="change_select(2);"></select>
      <input id="clear2" onclick="clear_text(2);" title="Clear contents" value="x" type="button">
      <input id="spacing2" onclick="insert_new_lines_text(2);" title="Separate claims by newlines" value="/" type="button">
    </div>
-   <div class="noprint"><textarea id="text2" class="input" onchange="change_text(2)"></textarea></div>
+   <div class="noprint"><textarea id="text2" class="input" onchange="change_text(2)" aria-label="Amended claims"></textarea></div>
  </div>
  <div style="clear:both;"></div>
  <div class="noprint" style="float:left; width:50%">
    <div class="noprint"><BR>Original description:
-     <select id="select3" style="listbox" title="Select the original description" onchange="change_select(3);"></select>
+     <select id="select3" class="listbox" title="Select the original description" onchange="change_select(3);"></select>
      <input id="clear3" onclick="clear_text(3);" title="Clear contents" value="x" type="button">
      <input id="spacing3" onclick="insert_new_lines_text(3);" title="Separate description paragraphs by newlines" value="/" type="button">
    </div>
-   <div class="noprint"><textarea id="text3" class="input" style="height: 100px" onchange="change_text(3)"></textarea></div>
+   <div class="noprint"><textarea id="text3" class="input" style="height: 100px" onchange="change_text(3)" aria-label="Original description"></textarea></div>
  </div>
  <div class="noprint" style="float:right; width:49%">
    <div class="noprint"><BR>Amended description (optional):
-     <select id="select4" style="listbox" title="Select the amended description" onchange="change_select(4);"></select>
+     <select id="select4" class="listbox" title="Select the amended description" onchange="change_select(4);"></select>
      <input id="clear4" onclick="clear_text(4);" title="Clear contents" value="x" type="button">
      <input id="spacing4" onclick="insert_new_lines_text(4);" title="Separate description paragraphs by newlines" value="/" type="button">
    </div>
-   <div class="noprint"><textarea id="text4" class="input" style="height: 100px" onchange="change_text(4)"></textarea></div>
+   <div class="noprint"><textarea id="text4" class="input" style="height: 100px" onchange="change_text(4)" aria-label="Amended description"></textarea></div>
  </div>
  <div style="clear:both;"></div>
  <div class="noprint">
@@ -1183,7 +1188,7 @@ Options marked with (*) may impact performance; options marked with (#) are not 
 <p>
 
 FDIFF4 anti-cluttering:
-<input id="basis_threshold" value="25" maxlength="5" size="3" type="text"> characters
+<input id="basis_threshold" value="25" maxlength="5" size="3" type="text" aria-label="Basis threshold"> characters
 <br>Sets the minimum length of text fragments for which basis should be found in the
 original claim set. Value is clipped between 5 and 50. Setting this too low causes the
 algorithm to find support for even the smallest words and gives a very cluttered result.</p>
@@ -1194,11 +1199,11 @@ algorithm to find support for even the smallest words and gives a very cluttered
 <dl>
   <dt><input id="raw" checked="checked" name="cleanup" type="radio"> <label for="raw">No Cleanup</label></dt>
   <dt><input id="semantic" name="cleanup" type="radio"> <label for="semantic">Semantic Cleanup</label></dt>
-  <dt><input id="efficiency" name="cleanup" type="radio"> <label for="efficiency">Efficiency Cleanup</label>, edit cost: <input id="editcost" value="4" maxlength="5" size="3" type="text"> </dt>
+  <dt><input id="efficiency" name="cleanup" type="radio"> <label for="efficiency">Efficiency Cleanup</label>, edit cost: <input id="editcost" value="4" maxlength="5" size="3" type="text" aria-label="Edit cost"> </dt>
 </dl>
 
 <p><b>Timeout:</b>
-<input id="timeout" value="20" maxlength="5" size="3" type="text"> seconds<br>If the 
+<input id="timeout" value="20" maxlength="5" size="3" type="text" aria-label="Time-out"> seconds<br>If the 
 mapping phase of the diff computation takes longer than this, then the 
 computation is truncated and the best solution to date is returned. While 
 guaranteed to be correct, it may not be optimal. A timeout of '0' allows for 
@@ -1327,6 +1332,12 @@ Axel Martinez Möller, Helmar Liess and many others for useful ideas and suggest
 <hr>
 <h3>Latest features</h3>
 <ul>
+<li>Feature block indicator ("Claim 1. An apparatus with [[this feature]].") to force looking for basis separately (Done in v4.74).</li>
+<li>Improved detection of mixed paragraph numbers (Done in v4.72).</li>
+<li>Claim tree prints base and support claims (direct and inherited) as superscript (Done in v4.66).</li>
+<li>Hide/unhide columns in output table for copy-pasting to Word/Martha ("toggle clean mode") (Done in v4.63).</li>
+<li>Second description input box for comparing descs (with stricter para numbering), bug fix for claim tree comparison (Done in v4.62).</li>
+<li>Output editable and mouse-over popup for claim texts in claim base legend column (Done in v4.57).</li>
 <li>Mouse-over on highlighted amended parts gives full claim text of original claim (Done in v4.50).</li>
 <li>Claim base override with 'positive' basis limitations (e.g. "only in claims 1, 3 and 5"), and/or ranges (Done in v4.51).</li>
 <li>Comparison against description (Done in v4.52).</li>
