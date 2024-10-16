@@ -13,7 +13,7 @@
 <style type="text/css">
 
 body {
-    font: normal 13px Verdana, Arial, sans-serif;
+	font: normal 14px Verdana, Arial, sans-serif !important;
 }
 
 ul {
@@ -35,7 +35,7 @@ ul {
 	border: 0px;
 	text-align: center;
 	font-family: serif;
-	font-size: 110%;
+	font-size: 110% !important;
 }
 
 .output {
@@ -47,7 +47,7 @@ ul {
 	padding-right: 3px;
 	padding-bottom: 3px;
 	font-family: serif;
-	font-size: 120%;
+	font-size: 120% !important;
 }
 
 .output_clean {
@@ -59,7 +59,7 @@ ul {
 	padding-right: 3px;
 	padding-bottom: 3px;
 	font-family: serif;
-	font-size: 120%;
+	font-size: 120% !important;
 }
 
 .time {
@@ -78,25 +78,36 @@ ul {
 }
 
 .fdiff4 {
+	text-align: left !important;
 	border-collapse: collapse;
 	border: grey 1px solid;
 	empty-cells: show;
+	font-size: 100% !important;
 }
 
 td.fdiff4 {
+	text-align: left !important;
 	padding: 5px;
+	font-size: 100% !important;
 }
 
 .tooltip {
-    display: none;
-    position: absolute;
-    background: white;
-    border: 2px solid black;
-    border-radius: 4px;
-    padding: 2px 4px;
+	display: none;
+	position: absolute;
+	background: white;
+	border: 2px solid black;
+	border-radius: 4px;
+	padding: 2px 4px;
 }
 :hover + .tooltip {
-    display: block;
+	display: block;
+}
+
+td {
+	text-align:left !important;
+}
+th {
+	text-align:left !important;
 }
 
 </style>
@@ -1168,24 +1179,21 @@ function show_preparation_help() {
 <DIV style="width:100%">
 <DIV style="width:50%;float:left">
 <H4>FDIFF Options</H4>
-<dl>
-  <dt><input id="fdiff3_highlights" name="fdiff3_highlights" type="checkbox" checked> <label for="fdiff3_highlights">Highlight FDIFF3 changes</label></dt>
-  <dt><input id="fdiff4_strikeout_highlights" name="fdiff4_strikeout_highlights" type="checkbox" checked> <label for="fdiff4_strikeout_highlights">Highlight FDIFF4 strike-out in red</label></dt>
-  <dt><input id="fdiff4_warn_claims" name="fdiff4_warn_claims" type="checkbox" checked> <label for="fdiff4_warn_claims">Warn about irregularly numbered claim sets</label></dt>
-  <dt><input id="fdiff4_simplify_legend" name="fdiff4_simplify_legend" type="checkbox" checked> <label for="fdiff4_simplify_legend">Simplify base claim legend (only one colour per claim)</label></dt>
-  <dt><input id="convert_claim_styles" name="convert_claim_styles" type="checkbox" checked> <label for="convert_claim_styles">Convert alternative claim formats (*), e.g. [0023], 5), 7/.</label></dt>
-  <dt><input id="ignore_case" name="ignore_case" type="checkbox"> <label for="ignore_case">Ignore case (*), e.g. CLAim == Claim</label></dt>
-  <dt><input id="eszett_normalization" name="eszett_normalization" type="checkbox"> <label for="eszett_normalization">Filter out (normalize) eszett (ß), e.g. Maßgabe => Massgabe</label></dt>
-  <dt><input id="ignore_hyphenation" name="ignore_hyphenation" type="checkbox"> <label for="ignore_hyphenation">Filter out hyphenation (*,#), e.g. Verbes- serung => Verbesserung</label></dt>
-  <dt><input id="ignore_spaces" name="ignore_spaces" type="checkbox"> <label for="ignore_spaces">Filter out spaces near brackets, commas, periods and (semi)colons, e.g. (20 ) => (20)</label></dt>
-  <dt><input id="ignore_in_brackets" name="ignore_in_brackets" type="checkbox"> <label for="ignore_in_brackets">Filter out reference signs (#), e.g. (29a; 29b)</label></dt>
-  <dt><input id="fix_glued_words" name="fix_glued_words" type="checkbox"> <label for="fix_glued_words">Filter out (un)joining of word pairs, e.g. <strike><font style="background-color: OrangeRed">claim set</font></strike><u><font style="background-color: yellow">claimset</font></u> => claimset</label></dt>
-  <dt><input id="linebreaks" name="linebreaks" type="checkbox"> <label for="linebreaks">Insert line-breaks after <b>(semi-)colons</b> in the output (clears existing linebreaks)</label></dt>
-  <dt><input id="linebreaks2" name="linebreaks2" type="checkbox"> <label for="linebreaks2">Insert line-breaks after <b>commas</b> in the output (clears existing linebreaks)</label></dt>
-  <dt><input id="fdiff4_tree_analysis" name="fdiff4_tree_analysis" type="checkbox"> <label for="fdiff4_tree_analysis">Do claim tree analysis</label></dt>
-</dl>
-Options marked with (*) may impact performance; options marked with (#) are not used for description.
-<p>
+<DIV width="100%"><input id="fdiff3_highlights" name="fdiff3_highlights" type="checkbox" checked> <label for="fdiff3_highlights">Highlight FDIFF3 changes</label></DIV>
+<DIV width="100%"><input id="fdiff4_strikeout_highlights" name="fdiff4_strikeout_highlights" type="checkbox" checked> <label for="fdiff4_strikeout_highlights">Highlight FDIFF4 strike-out in red</label></DIV>
+<DIV width="100%"><input id="fdiff4_warn_claims" name="fdiff4_warn_claims" type="checkbox" checked> <label for="fdiff4_warn_claims">Warn about irregularly numbered claim sets</label></DIV>
+<DIV width="100%"><input id="fdiff4_simplify_legend" name="fdiff4_simplify_legend" type="checkbox" checked> <label for="fdiff4_simplify_legend">Simplify base claim legend (only one colour per claim)</label></DIV>
+<DIV width="100%"><input id="convert_claim_styles" name="convert_claim_styles" type="checkbox" checked> <label for="convert_claim_styles">Convert alternative claim formats (*), e.g. [0023], 5), 7/.</label></DIV>
+<DIV width="100%"><input id="ignore_case" name="ignore_case" type="checkbox"> <label for="ignore_case">Ignore case (*), e.g. CLAim == Claim</label></DIV>
+<DIV width="100%"><input id="eszett_normalization" name="eszett_normalization" type="checkbox"> <label for="eszett_normalization">Filter out (normalize) eszett (ß), e.g. Maßgabe => Massgabe</label></DIV>
+<DIV width="100%"><input id="ignore_hyphenation" name="ignore_hyphenation" type="checkbox"> <label for="ignore_hyphenation">Filter out hyphenation (*,#), e.g. Verbes- serung => Verbesserung</label></DIV>
+<DIV width="100%"><input id="ignore_spaces" name="ignore_spaces" type="checkbox"> <label for="ignore_spaces">Filter out spaces near brackets, commas, periods and (semi)colons, e.g. (20 ) => (20)</label></DIV>
+<DIV width="100%"><input id="ignore_in_brackets" name="ignore_in_brackets" type="checkbox"> <label for="ignore_in_brackets">Filter out reference signs (#), e.g. (29a; 29b)</label></DIV>
+<DIV width="100%"><input id="fix_glued_words" name="fix_glued_words" type="checkbox"> <label for="fix_glued_words">Filter out (un)joining of word pairs, e.g. <strike><font style="background-color: OrangeRed">claim set</font></strike><u><font style="background-color: yellow">claimset</font></u> => claimset</label></DIV>
+<DIV width="100%"><input id="linebreaks" name="linebreaks" type="checkbox"> <label for="linebreaks">Insert line-breaks after <b>(semi-)colons</b> in the output (clears existing linebreaks)</label></DIV>
+<DIV width="100%"><input id="linebreaks2" name="linebreaks2" type="checkbox"> <label for="linebreaks2">Insert line-breaks after <b>commas</b> in the output (clears existing linebreaks)</label></DIV>
+<DIV width="100%"><input id="fdiff4_tree_analysis" name="fdiff4_tree_analysis" type="checkbox"> <label for="fdiff4_tree_analysis">Do claim tree analysis</label></DIV>
+<p>Options marked with (*) may impact performance; options marked with (#) are not used for description.</p>
 
 FDIFF4 anti-cluttering:
 <input id="basis_threshold" value="25" maxlength="5" size="3" type="text" aria-label="Basis threshold"> characters
@@ -1196,11 +1204,9 @@ algorithm to find support for even the smallest words and gives a very cluttered
 </DIV>
 <DIV style="width:49%;float:right">
 <H4>Google Diff Options</H4>
-<dl>
-  <dt><input id="raw" checked="checked" name="cleanup" type="radio"> <label for="raw">No Cleanup</label></dt>
-  <dt><input id="semantic" name="cleanup" type="radio"> <label for="semantic">Semantic Cleanup</label></dt>
-  <dt><input id="efficiency" name="cleanup" type="radio"> <label for="efficiency">Efficiency Cleanup</label>, edit cost: <input id="editcost" value="4" maxlength="5" size="3" type="text" aria-label="Edit cost"> </dt>
-</dl>
+<DIV width="100%"><input id="raw" checked="checked" name="cleanup" type="radio"> <label for="raw">No Cleanup</label></DIV>
+<DIV width="100%"><input id="semantic" name="cleanup" type="radio"> <label for="semantic">Semantic Cleanup</label></DIV>
+<DIV width="100%"><input id="efficiency" name="cleanup" type="radio"> <label for="efficiency">Efficiency Cleanup</label>, edit cost: <input id="editcost" value="4" maxlength="5" size="3" type="text" aria-label="Edit cost"> </DIV>
 
 <p><b>Timeout:</b>
 <input id="timeout" value="20" maxlength="5" size="3" type="text" aria-label="Time-out"> seconds<br>If the 
@@ -1295,14 +1301,20 @@ the automatically found claim. This column is not printed.
 <TR><TD>0!</TD><TD>Do not find basis for anything</TD></TR>
 </TABLE><BR>
 Note that the override box is cleared when an invalid or inconsequential override pattern is found.</li>
+<li><b>Still getting sub-optimal results for the basis even when using manual base overrides?</b>
+<br>Try the new feature block indication markers. When support for a certain text segment
+can be partly found in one claim and partly in another claim, FDIFF4 selects as basis the one where
+the most words are in common, which is not always what you want. By inserting double square brackets 
+around specific text segments, you can force the tool to look for basis for that entire segment (within
+the limits of the anti-cluttering threshold).
+<br>Example: 2. The apparatus of claim 1, wherein [[some added features are important]] and other added features are not.
 <li><b>Having trouble seeing structure in the output?</b>
 <BR>Try the "indents and line-breaks" option.</li>
 <li><b>How about confidentiality?</b>
 <BR>Since all code, including the Google algorithm, is run on your own computer, there is <b>no confidentiality problem</b>.</li>
 <script language="Javascript">show_preparation_help();</script>
 <li><b>Did you find a bug?</b>
-<BR>Please report it to Frank de Jong. Please make sure you have the latest version by running ..fdiff. 
-When reporting a bug, please include the version of FDIFF you are using, the claim sets or the file you are working on, and preferably a screenshot.</li>
+<BR>Please report it to Frank de Jong. When reporting a bug, please include the version of FDIFF you are using, the claim sets or the file you are working on, and preferably a screenshot.</li>
 </ul>
 
 <hr class="noprint">
@@ -1311,11 +1323,14 @@ When reporting a bug, please include the version of FDIFF you are using, the cla
 
 <ul>
 <li>The original FDIFF engine was developed by Frank de Jong in 2009 and converted to Javascript in November 2012, with FDIFF4 appearing in August 2013.
-<BR>Automatic claim retrieval appeared in October 2017, thanks to Madou Keita (..FDIFF) and Ian Chapple (..TRI QUOTE).
-<BR>Thanks to Madou Keita, Ian Chapple, Thomas Gries, Wolfgang Sohrt, Bodo Kerner, Stephan Erbel, José Ferro Pozo, Emmanuel Flamme, Stefan Demin, Tommi Järvi, 
+<BR>Automatic claim retrieval through EPOQUE appeared in October 2017, thanks to Madou Keita (..FDIFF) and Ian Chapple (..TRI QUOTE).
+<BR>The EPOQUE version was ported to EPYQUE in October 2024, thanks to Madou Keita and Ian Chapple.
+</li>
+<li>Thanks to Madou Keita, Ian Chapple, Thomas Gries, Wolfgang Sohrt, Bodo Kerner, Stephan Erbel, José Ferro Pozo, Emmanuel Flamme, Stefan Demin, Tommi Järvi, 
 Axel Martinez Möller, Helmar Liess and many others for useful ideas and suggestions.
 </li>
-<li>See the <a href="http://confluence-p.internal.epo.org/pages/viewpage.action?pageId=104474072">Confluence Wiki page</A> for a lot of extra documentation.</li>
+<li>See the <a href="https://csprod-epo.opentext.cloud/otcs/llisapi.dll/app/nodes/38687959">OpenText FDIFF page</A> for a lot of extra documentation.</li>
+<li>The outdated <a href="http://confluence-p.internal.epo.org/pages/viewpage.action?pageId=104474072">Confluence Wiki page</A> might also still have some info that you are looking for.</li>
 <li>This <a href="doc/fdiff.pdf">document</a> explains the basics of FDIFF3 and FDIFF4.</li>
 <li>A <a href="doc/OnePager_fdiff_v09.pdf">One-Pager</a> written by Johan Bengtsson (July 2015) is also available.</li>
 <li><a href="http://ckt.internal.epo.org/Tips/view.htm?id=1435">Daytip 1435</a>: <i>DiffTri: Tool to paste formatted differences into Trimaran.</i></li>
@@ -1332,45 +1347,40 @@ Axel Martinez Möller, Helmar Liess and many others for useful ideas and suggest
 <hr>
 <h3>Latest features</h3>
 <ul>
-<li>Feature block indicator ("Claim 1. An apparatus with [[this feature]].") to force looking for basis separately (Done in v4.74).</li>
+<li>Feature block override indicator ("Claim 1. An apparatus with [[this feature]].") to force looking for basis separately (Done in v4.74).</li>
 <li>Improved detection of mixed paragraph numbers (Done in v4.72).</li>
-<li>Claim tree prints base and support claims (direct and inherited) as superscript (Done in v4.66).</li>
-<li>Hide/unhide columns in output table for copy-pasting to Word/Martha ("toggle clean mode") (Done in v4.63).</li>
-<li>Second description input box for comparing descs (with stricter para numbering), bug fix for claim tree comparison (Done in v4.62).</li>
-<li>Output editable and mouse-over popup for claim texts in claim base legend column (Done in v4.57).</li>
-<li>Mouse-over on highlighted amended parts gives full claim text of original claim (Done in v4.50).</li>
-<li>Claim base override with 'positive' basis limitations (e.g. "only in claims 1, 3 and 5"), and/or ranges (Done in v4.51).</li>
-<li>Comparison against description (Done in v4.52).</li>
-<li>Output table editing (Was: Insertion of manual line-breaks (e.g. replace //, || or \\)) (Madou Keita) (Done in v4.57)</li>
-<li>Mouse-over on claim tree or base claim gives full claim text in pop-up. (Done in v4.57)</li>
-<li>Suppression of "red overflow" for deleted / strike-out passages (Madou Keita) (Done in v4.58).</li>
-<li>Automatic scrolling to top of output table (Madou Keita) (Done in v4.58).</li>
-<li>Claim set insertion in one step with warning if anything changed (Done in v4.60).</li>
-<li>Comparison of descriptions (Done in v4.62).</li>
-<li>Print preview with cleaned up output for copy-paste to e.g. Word (Madou Keita) (Done in v4.63)</li>
+<li>Monochrome output (Madou Keita / Ian Chapple) (Done in v4.70)</li>
+<li>Chrome support (HTML5 + LocalStorage instead of cookies) (Done in v4.68)</li>
+<li>Exclusion and inclusion for claim basis also on paragraphs (Madou Keita) (Done in v4.67)</li>
+<li>Claim tree shows base and support claims as superscripts (h/t Madou Keita) (Done in v4.66)</li>
+<li>Highlighting now also copies to Martha (Done in v4.65)</li>
+<li>Keep newlines in FDIFF3/FDIFF4, unless newlines are added by one of the linebreak options (Done in v4.65)</li>
+<li>Indicate which claimset has a dependency problem in Claim tree (Ian Chapple) (Done in v4.65)</li>
 <li>Copy output button (Madou Keita) (Done in v4.64)</li>
 <li>Score words like "according" and "claim" at 0 for base claim determination (Madou Keita) (Done in v4.64)</li>
 <li>Fix word gluing with words with diacritics (Madou Keita) (Done in v4.64)</li>
-<li>Keep newlines in FDIFF3/FDIFF4, unless newlines are added by one of the linebreak options (Done in v4.65)</li>
-<li>Indicate which claimset has a dependency problem in Claim tree (Ian Chapple) (Done in v4.65)</li>
-<li>Highlighting now also copies to Martha (Done in v4.65)</li>
-<li>Claim tree shows base and support claims as superscripts (Madou Keita) (Done in v4.66)</li>
-<li>Exclusion and inclusion for claim basis also on paragraphs (Madou Keita) (Done in v4.67)</li>
-<li>Chrome support (HTML5 + LocalStorage instead of cookies) (Done in v4.68)</li>
-<li>Monochrome output (Madou Keita / Ian Chapple) (Done in v4.70)</li>
+<li>Hide/unhide columns in output table for copy-pasting to Word/Martha ("toggle clean mode") (Done in v4.63).</li>
+<li>Print preview with cleaned up output for copy-paste to e.g. Word (Madou Keita) (Done in v4.63)</li>
+<li>Second description input box for comparing descs (with stricter para numbering), bug fix for claim tree comparison (Done in v4.62).</li>
+<li>Comparison of descriptions (Done in v4.62).</li>
+<li>Claim set insertion in one step with warning if anything changed (Done in v4.60).</li>
+<li>Suppression of "red overflow" for deleted / strike-out passages (Madou Keita) (Done in v4.58).</li>
+<li>Automatic scrolling to top of output table (Madou Keita) (Done in v4.58).</li>
+<li>Output table editing (Was: Insertion of manual line-breaks (e.g. replace //, || or \\)) (Madou Keita) (Done in v4.57)</li>
+<li>Mouse-over on claim tree or base claim gives full claim text in pop-up. (Done in v4.57)</li>
+<li>Comparison against description (Done in v4.52).</li>
+<li>Claim base override with 'positive' basis limitations (e.g. "only in claims 1, 3 and 5"), and/or ranges (Done in v4.51).</li>
+<li>Mouse-over on highlighted amended parts gives full claim text of original claim (Done in v4.50).</li>
 </ul>
 <hr>
 <h3>To do list</h3>
 <ul>
-<li>Catch Chrome blocking cookies</li>
 <li>Put original claims in new last column</li>
 <li>Override base finding order, e.g. first look for basis for the amendments in claim 2, then in claim 5 (Dominique Andlauer)</li>
 <li>Give support claim numbers inside the amendment block, e.g. "1. Apparatus with a |<font style="background-color:cyan"><U>newly added [6]</U></font>| feature (Wolfgang Sohrt)"</li>
 <li>Give claim base legend also as natural language, for copy-pasting to Votum (Tamas Regert).</li>
 <li>Output formatting, e.g. fonts, line spacing (Helmar Lies).</li>
-<li>Overhaul of claim splitting based on expected monotonously increasing sequences of numbers.</li>
 <li>Use of claim tree analysis to improve best guess for base claims, or warn about features moving into other branches (embodiments).</li>
-<li>Correct recognition of claim tree "nach einem der vorherigen <b>Verfahrens</b>ansprüche".</li>
 </ul>
 </div>
 
