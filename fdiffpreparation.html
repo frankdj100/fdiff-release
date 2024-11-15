@@ -121,6 +121,7 @@ var lb_prev_index = [ -1, -1, -1, -1, -1 ];
 var claim_indexes = [];
 var desc_indexes = [];
 var line_spacing = "120%";
+var show_fam = false;
 
 var output_mode = 0;			// 0 = coloured, 1 = clean, 2 = clean & monochrome
 var OUTPUT_MODE_NORMAL = 0, OUTPUT_MODE_CLEAN = 1, OUTPUT_MODE_MONO = 2;
@@ -145,6 +146,7 @@ $(document).ready(function() {
 	} else {
 		fdiff_config = "release";
 	}
+	//fdiff_config = "pyfdiff";			// COMMENT THIS BEFORE RELEASE!!!
 	
 	// For debugging in Alpha, override the configuration (this should be commented out before release)
 	//fdiff_config = "preparation";
@@ -350,7 +352,15 @@ function initialise_listboxes( fdiff_config ) {
 	  var lb3 = document.getElementById("select3");
 	  var lb4 = document.getElementById("select4");
 	  var oldest_desc_date = 99999999;
-	  var oldest_desc = -1;
+	  var oldest_desc = -1, oldest_desc_lb_index = 0;
+	  var selected_orig, selected_new, selected_desc_orig, selected_desc_new = 0;
+
+	  // Reset the listboxes (necessary for the show fam button)
+	  $('#select1').empty();
+	  $('#select2').empty();
+	  $('#select3').empty();
+	  $('#select4').empty();
+	  text_changed[ 1 ] = text_changed[ 2 ] = text_changed[ 3 ] = text_changed[ 4 ] = false;
 
 	  // Store the dossier number and put it in the browser title
 	  if( typeof( applicationdata.dossier ) != "undefined" ) {
@@ -369,6 +379,13 @@ function initialise_listboxes( fdiff_config ) {
 	  // Go through the supplied claim sets, store them in the correct listboxes
 	  for( var i = 0; i < applicationdata.claimsets.length; i++ ) {
 
+		// Skip family members if the family switch is off
+		if( applicationdata.claimsets[i].header != "undefined" ) {
+			if( (show_fam == false) && (applicationdata.claimsets[i].header.indexOf( "FAM" ) >= 0) ) {
+				continue;
+			}
+		}
+
 		// Skip the horizontal ruler (it has no request field)
 		if( typeof( applicationdata.claimsets[i].request ) != "undefined" )
 		{
@@ -380,10 +397,12 @@ function initialise_listboxes( fdiff_config ) {
 				var matches;
 				if( (matches = regexp.exec( applicationdata.claimsets[i].date )) != null ) {
 					desc_date = parseInt( matches[3] ) + parseInt( matches[2] ) * 100 + parseInt( matches[1] ) * 10000;
-					if( desc_date < oldest_desc_date ) {
+					if( (typeof(applicationdata.claimsets[i].header) != "undefined") &&
+						(applicationdata.claimsets[i].header.indexOf( "FAM") < 0 ) &&
+						(desc_date < oldest_desc_date) ) {
 						oldest_desc_date = desc_date;
 						oldest_desc = i;
-						lb3.selectedIndex = desc_indexes.length;
+						oldest_desc_lb_index = desc_indexes.length;
 					}
 				}
 				// Store the index in the translation table
@@ -393,10 +412,16 @@ function initialise_listboxes( fdiff_config ) {
 				var option3 = document.createElement("option");
 				option3.text =  applicationdata.claimsets[i].header;
 				lb3.add( option3 );
+				if( (typeof( applicationdata.desc_original ) != "undefined") && (i == applicationdata.desc_original) ) {
+					selected_desc_orig = desc_indexes.length - 1;
+				}
 
 				var option4 = document.createElement("option");
 				option4.text =  applicationdata.claimsets[i].header;
 				lb4.add( option4 );
+				if( (typeof( applicationdata.desc_new ) != "undefined" ) && (i == applicationdata.desc_new) ) {
+					selected_desc_new = claim_indexes.length - 1;
+				}
 
 			} else {
 			
@@ -407,38 +432,44 @@ function initialise_listboxes( fdiff_config ) {
 				var option1 = document.createElement("option");
 				option1.text =  applicationdata.claimsets[i].header;
 				lb1.add( option1 );
+				if( (typeof( applicationdata.set_original ) != "undefined") && (i == applicationdata.set_original) ) {
+					selected_orig = claim_indexes.length - 1;
+				}
 
 				var option2 = document.createElement("option");
 				option2.text =  applicationdata.claimsets[i].header;
 				lb2.add( option2 );
+				if( (typeof( applicationdata.set_new ) != "undefined" ) && (i == applicationdata.set_new) ) {
+					selected_new = claim_indexes.length - 1;
+				}
 			}
 		}
 	  }
 	  
 	  // Input the selected claims and description into the text boxes
 	  if( typeof( applicationdata.set_original ) != "undefined" ) {
-		lb1.selectedIndex = applicationdata.set_original;
+		lb1.selectedIndex = selected_orig;
 		if( applicationdata.claimsets.length > applicationdata.set_original ) {
 			$('#text1').val( applicationdata.claimsets[ applicationdata.set_original ].text );
 			fdiff.set_header_orig( applicationdata.claimsets[ applicationdata.set_original ].header );
 		}
 	  }
 	  if( typeof( applicationdata.set_new ) != "undefined" ) {
-		lb2.selectedIndex = applicationdata.set_new;
+		lb2.selectedIndex = selected_new;
 		if( applicationdata.claimsets.length > applicationdata.set_new ) {
 			$('#text2').val( applicationdata.claimsets[ applicationdata.set_new ].text );
 			fdiff.set_header_new( applicationdata.claimsets[ applicationdata.set_new ].header );
 		}
 	  }
 	  if( typeof( applicationdata.desc_original ) != "undefined" ) {
-		lb3.selectedIndex = applicationdata.desc_original;
+		lb3.selectedIndex = selected_desc_original;
 		if( applicationdata.claimsets.length > applicationdata.desc_original ) {
 			$('#text3').val( applicationdata.claimsets[ applicationdata.desc_original ].text );
 		}
 	  } else {
 	    // No original description defined -- find the oldest; this should only happen until ..FDIFF is updated
 		if( oldest_desc >= 0 ) {
-			//lb3.selectedIndex = oldest_desc; This is set already above, at the check for oldest description
+			lb3.selectedIndex = oldest_desc_lb_index;
 			$('#text3').val( applicationdata.claimsets[ oldest_desc ].text );
 		} else {
 			// No descriptions found
@@ -446,7 +477,7 @@ function initialise_listboxes( fdiff_config ) {
 		}
 	  }
 	  if( typeof( applicationdata.desc_new ) != "undefined" ) {
-		lb4.selectedIndex = applicationdata.desc_new;
+		lb4.selectedIndex = selected_desc_new;
 		if( applicationdata.claimsets.length > applicationdata.desc_new ) {
 			$('#text4').val( applicationdata.claimsets[ applicationdata.desc_new ].text );
 		}
@@ -461,10 +492,12 @@ function initialise_listboxes( fdiff_config ) {
 		var lb2 = document.getElementById("select2");
 		var lb3 = document.getElementById("select3");
 		var lb4 = document.getElementById("select4");
+		var show_fam_toggle = document.getElementById("fam_toggle");
 		lb1.disabled = 1;
 		lb2.disabled = 1;
 		lb3.disabled = 1;
 		lb4.disabled = 1;
+		show_fam_toggle.disabled = 1;
 	}
 
 }
@@ -498,6 +531,7 @@ function save_settings() {
 		"&lb=" +  ($('#linebreaks').attr("checked") ? 1 : 0) +
 		"&lb2=" +  ($('#linebreaks2').attr("checked") ? 1 : 0) +
 		"&f4t=" +  ($('#fdiff4_tree_analysis').attr("checked") ? 1 : 0) +
+		"&f4m=" +  ($('#fdiff4_score_matrix').attr("checked") ? 1 : 0) +
 		"&bt=" +  parseFloat( $('#basis_threshold').val() );
 
 	// Google Diff options
@@ -636,6 +670,11 @@ function load_settings( cookie_value ) {
 	} else {
 	    $('#fdiff4_tree_analysis').prop("checked", false);
 	}
+    if( cookie_value.indexOf( "f4m=1") != -1 ) {
+	    $('#fdiff4_score_matrix').prop("checked", true);
+	} else {
+	    $('#fdiff4_score_matrix').prop("checked", false);
+	}
 	if( (matches = cookie_value.match( /bt=(\d+)/)) != null ) {
 	  $('#basis_threshold').val(matches[1]);
 	} else {
@@ -728,6 +767,9 @@ function import_settings( )
 	}
 	if( typeof( settings.fdiff4_tree_analysis ) != "undefined" ) {
 		cookie_value = cookie_value + "&f4t=" + settings.fdiff4_tree_analysis;
+	}
+	if( typeof( settings.fdiff4_score_matrix ) != "undefined" ) {
+		cookie_value = cookie_value + "&f4m=" + settings.fdiff4_score_matrix;
 	}
 	if( typeof( settings.basis_threshold ) != "undefined" ) {
 		cookie_value = cookie_value + "&bt=" + settings.basis_threshold;
@@ -966,6 +1008,7 @@ function launch1( clms_or_desc ) {
 	  fdiff.set_ignore_in_brackets( $('#ignore_in_brackets').attr("checked") );
 	  fdiff.set_fix_glued_words( $('#fix_glued_words').attr("checked") );
 	  fdiff.set_fdiff4_tree_analysis( $('#fdiff4_tree_analysis').attr("checked") );
+	  fdiff.set_fdiff4_score_matrix( $('#fdiff4_score_matrix').attr("checked") );
 	  fdiff.set_insert_line_breaks_indents( $('#linebreaks').attr("checked") );
 	  fdiff.set_insert_line_breaks_indents2( $('#linebreaks2').attr("checked") );
 	  fdiff.set_basis_threshold( parseFloat( $('#basis_threshold').val() ) );
@@ -1076,6 +1119,30 @@ function show_preparation_help() {
 	}
 }
 
+function do_fam_toggle() {
+
+	// See if any of the text boxes were changed. These changes will be lost when we reset the list boxes
+	if( (text_changed[ 1 ] == true) || (text_changed[ 2 ] == true) || (text_changed[ 2 ] == true) || (text_changed[ 4 ] == true) )
+	{
+		if( confirm( "Changes to text field will be lost -- are you sure?" ) == false ) {
+			return;
+		}	
+	}
+
+	// Toggle between showing and hiding
+    if(document.getElementById('fam_toggle').innerHTML == 'Show FAM'){
+        document.getElementById('fam_toggle').innerHTML = 'Hide FAM';
+        document.getElementById('fam_toggle').style.borderStyle = 'inset';
+		show_fam = true;
+    }
+    else {
+        document.getElementById('fam_toggle').innerHTML = 'Show FAM';
+        document.getElementById('fam_toggle').style.borderStyle = '';
+		show_fam = false;
+    }
+	initialise_listboxes( fdiff_config );
+}
+
 </script>
 </head>
 
@@ -1104,6 +1171,7 @@ function show_preparation_help() {
 	 <select id="select1" class="listbox" title="Select the original claim set" onchange="change_select(1);"></select>
      <input id="clear1" onclick="clear_text(1);" title="Clear contents" value="x" type="button">
 	 <input id="spacing1" onclick="insert_new_lines_text(1);" title="Separate claims by newlines" value="/" type="button">
+	 <button id="fam_toggle" type="button" onclick="do_fam_toggle()" title="Toggle showing family claims and description on/off">Show FAM</button>
    </div>
    <div class="noprint"><textarea id="text1" class="input" onchange="change_text(1)" aria-label="Original claims"></textarea></div>
  </div>
@@ -1181,6 +1249,8 @@ function show_preparation_help() {
 <H4>FDIFF Options</H4>
 <DIV width="100%"><input id="fdiff3_highlights" name="fdiff3_highlights" type="checkbox" checked> <label for="fdiff3_highlights">Highlight FDIFF3 changes</label></DIV>
 <DIV width="100%"><input id="fdiff4_strikeout_highlights" name="fdiff4_strikeout_highlights" type="checkbox" checked> <label for="fdiff4_strikeout_highlights">Highlight FDIFF4 strike-out in red</label></DIV>
+<DIV width="100%"><input id="fdiff4_tree_analysis" name="fdiff4_tree_analysis" type="checkbox"> <label for="fdiff4_tree_analysis">Perform claim tree analysis</label></DIV>
+<DIV width="100%"><input id="fdiff4_score_matrix" name="fdiff4_score_matrix" type="checkbox"> <label for="fdiff4_score_matrix">Show score matrix (new feature)</label></DIV>
 <DIV width="100%"><input id="fdiff4_warn_claims" name="fdiff4_warn_claims" type="checkbox" checked> <label for="fdiff4_warn_claims">Warn about irregularly numbered claim sets</label></DIV>
 <DIV width="100%"><input id="fdiff4_simplify_legend" name="fdiff4_simplify_legend" type="checkbox" checked> <label for="fdiff4_simplify_legend">Simplify base claim legend (only one colour per claim)</label></DIV>
 <DIV width="100%"><input id="convert_claim_styles" name="convert_claim_styles" type="checkbox" checked> <label for="convert_claim_styles">Convert alternative claim formats (*), e.g. [0023], 5), 7/.</label></DIV>
@@ -1192,7 +1262,6 @@ function show_preparation_help() {
 <DIV width="100%"><input id="fix_glued_words" name="fix_glued_words" type="checkbox"> <label for="fix_glued_words">Filter out (un)joining of word pairs, e.g. <strike><font style="background-color: OrangeRed">claim set</font></strike><u><font style="background-color: yellow">claimset</font></u> => claimset</label></DIV>
 <DIV width="100%"><input id="linebreaks" name="linebreaks" type="checkbox"> <label for="linebreaks">Insert line-breaks after <b>(semi-)colons</b> in the output (clears existing linebreaks)</label></DIV>
 <DIV width="100%"><input id="linebreaks2" name="linebreaks2" type="checkbox"> <label for="linebreaks2">Insert line-breaks after <b>commas</b> in the output (clears existing linebreaks)</label></DIV>
-<DIV width="100%"><input id="fdiff4_tree_analysis" name="fdiff4_tree_analysis" type="checkbox"> <label for="fdiff4_tree_analysis">Do claim tree analysis</label></DIV>
 <p>Options marked with (*) may impact performance; options marked with (#) are not used for description.</p>
 
 FDIFF4 anti-cluttering:
@@ -1347,6 +1416,8 @@ Axel Martinez Möller, Helmar Liess and many others for useful ideas and suggest
 <hr>
 <h3>Latest features</h3>
 <ul>
+<li>Showing of score matrix (to identify similar claims at a glance) (Done in v4.81).</li>
+<li>Added button to show patent families in the listboxes (Off by default) (Done in v4.78).</li>
 <li>Feature block override indicator ("Claim 1. An apparatus with [[this feature]].") to force looking for basis separately (Done in v4.74).</li>
 <li>Improved detection of mixed paragraph numbers (Done in v4.72).</li>
 <li>Monochrome output (Madou Keita / Ian Chapple) (Done in v4.70)</li>
