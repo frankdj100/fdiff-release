@@ -1250,7 +1250,7 @@ function do_fam_toggle() {
 <DIV width="100%"><input id="fdiff3_highlights" name="fdiff3_highlights" type="checkbox" checked> <label for="fdiff3_highlights">Highlight FDIFF3 changes</label></DIV>
 <DIV width="100%"><input id="fdiff4_strikeout_highlights" name="fdiff4_strikeout_highlights" type="checkbox" checked> <label for="fdiff4_strikeout_highlights">Highlight FDIFF4 strike-out in red</label></DIV>
 <DIV width="100%"><input id="fdiff4_tree_analysis" name="fdiff4_tree_analysis" type="checkbox"> <label for="fdiff4_tree_analysis">Perform claim tree analysis</label></DIV>
-<DIV width="100%"><input id="fdiff4_score_matrix" name="fdiff4_score_matrix" type="checkbox"> <label for="fdiff4_score_matrix">Show score matrix (new feature)</label></DIV>
+<DIV width="100%"><input id="fdiff4_score_matrix" name="fdiff4_score_matrix" type="checkbox"> <label for="fdiff4_score_matrix">Show score matrix (<b>new feature</b>, see troubleshooting below)</label></DIV>
 <DIV width="100%"><input id="fdiff4_warn_claims" name="fdiff4_warn_claims" type="checkbox" checked> <label for="fdiff4_warn_claims">Warn about irregularly numbered claim sets</label></DIV>
 <DIV width="100%"><input id="fdiff4_simplify_legend" name="fdiff4_simplify_legend" type="checkbox" checked> <label for="fdiff4_simplify_legend">Simplify base claim legend (only one colour per claim)</label></DIV>
 <DIV width="100%"><input id="convert_claim_styles" name="convert_claim_styles" type="checkbox" checked> <label for="convert_claim_styles">Convert alternative claim formats (*), e.g. [0023], 5), 7/.</label></DIV>
@@ -1370,6 +1370,15 @@ the automatically found claim. This column is not printed.
 <TR><TD>0!</TD><TD>Do not find basis for anything</TD></TR>
 </TABLE><BR>
 Note that the override box is cleared when an invalid or inconsequential override pattern is found.</li>
+<li><b>What do the numbers in the score matrix mean?</b>
+<br>
+The score matrix indicates, for each new claim (in the rows), what percentage of the wording was found in each of the
+old claims (in the columns). Thus, a claim compared to itself scores 100%, while a new claim with added features scores 
+generally below 100%. The colours are determined, per row, by comparing the score to the best scoring old claim, with the 
+best scoring old claim always being green.
+Note that you can use the score matrix to quickly find similar claims in a set by comparing a claim set against itself.
+<br>Also note that the numbers in the score matrix are different from (although related to) the percentages given below the override boxes.
+</li>
 <li><b>Still getting sub-optimal results for the basis even when using manual base overrides?</b>
 <br>Try the new feature block indication markers. When support for a certain text segment
 can be partly found in one claim and partly in another claim, FDIFF4 selects as basis the one where
