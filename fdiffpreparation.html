@@ -340,6 +340,27 @@ function selectElementContents(el) {
     }
 }
 
+function validate_basis_threshold() {
+
+	// Grab the value from the editbox (the slider updates this real-time)
+	var value = parseFloat( $('#basis_threshold').val() );
+	if( value == NaN ) {
+		value = 25;
+	}
+
+	// Enforce boundaries
+	if( value > 50 ) {
+		value = 50;
+	}
+	if( value < 5 ) {
+		value = 5;
+	}
+
+	// Save back the value
+	$('#basis_threshold').val( value );
+	document.getElementById('rangeValue').innerText = value;
+	document.getElementById('bt_slider').value = value;	
+}
 
 function initialise_listboxes( fdiff_config ) {
 
@@ -515,6 +536,9 @@ function save_settings() {
 	  cookie_value = "alg=3";
 	}
 
+	// Fool-proof basis threshold field
+	validate_basis_threshold()
+
 	// FDIFF options
 	cookie_value = cookie_value +
 		"&f3h=" + ($('#fdiff3_highlights').attr("checked") ? 1 : 0) +
@@ -678,7 +702,7 @@ function load_settings( cookie_value ) {
 	if( (matches = cookie_value.match( /bt=(\d+)/)) != null ) {
 	  $('#basis_threshold').val(matches[1]);
 	} else {
-	  $('#basis_threshold').val(15);
+	  $('#basis_threshold').val(25);
 	}
 
 	// Set Google Diff Options
@@ -992,6 +1016,9 @@ function launch1( clms_or_desc ) {
 
 	} else if( $('#fdiff4').attr("checked") ) {
 
+	  // Make sure the basis threshold is within bounds
+	  validate_basis_threshold()
+
 	  /* run fdiff4 */
 	  var d;
 	  var ms_start = ( new Date() ).getTime();
@@ -1143,6 +1170,21 @@ function do_fam_toggle() {
 	initialise_listboxes( fdiff_config );
 }
 
+function drag_slider( value ) {
+
+	// Set the value to the slider info
+	document.getElementById('rangeValue').innerText = value;
+
+	// Set the value to the edit box in the options
+	document.getElementById('basis_threshold').value = value;
+
+}
+
+function release_slider( value ) {
+	drag_slider(value);
+	launch( 'c' );
+}
+
 </script>
 </head>
 
@@ -1202,7 +1244,8 @@ function do_fam_toggle() {
  </div>
  <div style="clear:both;"></div>
  <div class="noprint">
-    <p>
+	<br>
+    <div style="float:left">
       <input id="Button1" onclick="launch( 'c' );" value="Compare CLMS" type="button" accesskey="C" title="ALT + SHIFT + C">
       <input id="Button2" onclick="load_and_launch( 'c' );" value="Load settings & Compare CLMS" type="button" accesskey="L" title="ALT + SHIFT + L">
       <input id="Button3" onclick="launch( 'd' );" value="Compare DESC" type="button" accesskey="D" title="ALT + SHIFT + D"> &vert;
@@ -1211,7 +1254,13 @@ function do_fam_toggle() {
       <input id="Button5" onclick="cycle_output_mode();" value="Cycle output mode" type="button" accesskey="T" title="ALT + SHIFT + T">
       <input id="Button9" onclick="copyCleanOutput();" value="Copy clean" type="button">
       <input id="Button11" onclick="copyMonoOutput();" value="Copy monochrome" type="button">
-	</p>
+	</div>
+    <div style="float:right">
+			<div style="float:left"><input id="bt_slider" type="range" min="5" max="50" value="25" oninput="drag_slider(this.value);" 
+						onchange="release_slider(this.value);" title="Anti-clutter threshold (see options)"></div>
+			<div style="float:right"><p style="display:inline" id="rangeValue"">25</p></div>
+	</div>
+	<br><br>
  </div> 
  <div class="print" style="float:left; width:100%">
    <div id="output1" class="output print" readonly="">(Codified difference will appear here)</div>
@@ -1222,7 +1271,7 @@ function do_fam_toggle() {
 </div>
 
 <div class="noprint">
-<p>
+<br>
 <input id="Button1a" onclick="launch_and_scroll( 'c' );" value="Compare CLMS ^" type="button" accesskey="S" title="ALT + SHIFT + S">
 <input id="Button2a" onclick="load_and_launch( 'c' );" value="Load settings & Compare CLMS" type="button" title="ALT + SHIFT + L">
 <input id="Button3a" onclick="launch_and_scroll( 'd' );" value="Compare DESC ^" type="button" accesskey="A" title="ALT + SHIFT + A"> &vert;
@@ -1265,7 +1314,7 @@ function do_fam_toggle() {
 <p>Options marked with (*) may impact performance; options marked with (#) are not used for description.</p>
 
 FDIFF4 anti-cluttering:
-<input id="basis_threshold" value="25" maxlength="5" size="3" type="text" aria-label="Basis threshold"> characters
+<input type="number" min="5" max="50" id="basis_threshold" value="25" maxlength="5" size="3" type="text" aria-label="Basis threshold"> characters
 <br>Sets the minimum length of text fragments for which basis should be found in the
 original claim set. Value is clipped between 5 and 50. Setting this too low causes the
 algorithm to find support for even the smallest words and gives a very cluttered result.</p>
