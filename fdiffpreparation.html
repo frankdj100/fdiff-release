@@ -184,7 +184,7 @@ $(document).ready(function() {
 	}
 	document.getElementById("fdiff_version").innerHTML = version_text;
 
-	if( (typeof( applicationdata.dossier ) != "undefined") && (applicationdata.dossier.length > 6) ) {
+	if( (typeof( applicationdata ) != "undefined") && (typeof( applicationdata.dossier ) != "undefined") && (applicationdata.dossier.length > 6) ) {
 		document.getElementById("dfr_link").innerHTML = "<A HREF=\"http://q/dfr:" + applicationdata.dossier + "\" target=\"_blank\">" + applicationdata.dossier + "</A>";
 	}
 	
