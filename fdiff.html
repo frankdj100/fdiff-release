@@ -40,7 +40,7 @@ ul {
 
 .output {
 	border: 1px solid;
-	background: lightyellow;
+	background: whitesmoke;
 	min-height: 50px;
 	padding-left: 3px;
 	padding-top: 3px;
@@ -60,6 +60,7 @@ ul {
 	padding-bottom: 3px;
 	font-family: serif;
 	font-size: 120% !important;
+	text-align: left !important;
 }
 
 .time {
@@ -104,10 +105,18 @@ td.fdiff4 {
 }
 
 td {
-	text-align:left !important;
+	text-align: left !important;
 }
 th {
-	text-align:left !important;
+	text-align: left !important;
+}
+
+#overlay {
+	position: fixed;
+	display: none;
+	top: 0;
+	left: 0;
+	z-index: 99;
 }
 
 </style>
@@ -133,7 +142,9 @@ $(document).ready(function() {
 	var version_text = "x.xx";
 
 	// Figure out in which mode to run
-	if( url.search( /fdiff.alpha.test.test/ ) > 0 ) {
+	if( typeof( fdiff_config_override ) != "undefined" ) {
+		fdiff_config = fdiff_config_override;
+	} else if( url.search( /fdiff.alpha.test.test/ ) > 0 ) {
 		fdiff_config = "test";
 	} else if( url.search( /fdiff.alpha.index/ ) > 0 ) {
 		fdiff_config = "alpha";
@@ -142,6 +153,8 @@ $(document).ready(function() {
 	} else if( url.search( /fdiffpreparation.html/ ) > 0 ) {
 		fdiff_config = "preparation";
 	} else if( url.search( /pyfdiff/ ) > 0 ) {
+		fdiff_config = "pyfdiff";
+	} else if( url.search( /epyque/ ) > 0 ) {
 		fdiff_config = "pyfdiff";
 	} else {
 		fdiff_config = "release";
@@ -171,6 +184,10 @@ $(document).ready(function() {
 	}
 	document.getElementById("fdiff_version").innerHTML = version_text;
 
+	if( (typeof( applicationdata.dossier ) != "undefined") && (applicationdata.dossier.length > 6) ) {
+		document.getElementById("dfr_link").innerHTML = "<A HREF=\"http://q/dfr:" + applicationdata.dossier + "\" target=\"_blank\">" + applicationdata.dossier + "</A>";
+	}
+	
 	// Hide the secondary and tertiary outputs
 	$('#output2').hide();
 	$('#output3').hide();
@@ -251,7 +268,7 @@ function cycle_output_mode( to_output_mode ) {
 	if( new_output_mode != output_mode ) {
 
 		// Re-filter the last normal output, to make sure we catch all changes to the title etc.
-		var filtered_clean = fdiff.filter_table_contents( $('#output1').html() );
+		var filtered_clean = fdiff.filter_table_contents( $('#output1').html(), fdiff_config == "pyfdiff" );
 		var filtered_mono = fdiff.filter_table_colours( filtered_clean );
 
 		if( new_output_mode == OUTPUT_MODE_CLEAN ) {
@@ -926,7 +943,8 @@ function regenerate_title( clms_or_desc ) {
 
 function launch( clms_or_desc ) {
 
-	$('*').css('cursor', 'wait');
+	$('#overlay').html( "Working - please wait..." );
+	$('#overlay').show();
 	window.setTimeout(function () { launch1( clms_or_desc ); }, 10);	// Allow browser to update GUI
 
 }
@@ -952,8 +970,7 @@ function launch1( clms_or_desc ) {
 		if( (text3 == "") || (text4 == "") ) {
 			$('#output1').html( "No comparison performed -- cannot compare with empty description" );
 			$('#output2').html( "No comparison performed -- cannot compare with empty description" );
-			// Reset cursor to normal
-			$('*').css('cursor', 'default');
+			$('#overlay').hide();
 			$("#time1").text( "0.000s" );
 			return;
 		}
@@ -1079,10 +1096,10 @@ function launch1( clms_or_desc ) {
 
 	  // Also update the filtered output (if it is active)
 	  if( output_mode == OUTPUT_MODE_CLEAN ) {
-		var filtered = fdiff.filter_table_contents( $('#output1').html() );
+		var filtered = fdiff.filter_table_contents( $('#output1').html(), fdiff_config == "pyfdiff" );
 		$('#output2').html( filtered  );
 	  }	else if( output_mode == OUTPUT_MODE_MONO ) {
-		var filtered = fdiff.filter_table_contents( $('#output1').html() );
+		var filtered = fdiff.filter_table_contents( $('#output1').html(), fdiff_config == "pyfdiff" );
 		var filtered_mono = fdiff.filter_table_colours( filtered );
 		$('#output3').html( filtered_mono );
 	  }
@@ -1093,8 +1110,7 @@ function launch1( clms_or_desc ) {
 	}
 	
 	// Reset cursor to normal
-	$('*').css('cursor', 'default');
-	
+	$('#overlay').hide();
 }
 
 function load_and_launch( clms_or_desc ) {
@@ -1197,8 +1213,12 @@ function release_slider( value ) {
 </DIV>
 
 <DIV class="noprint">
-<h2><span style="COLOR: blue">FDIFF</span>: A tool to compare two claim sets or texts <A HREF="#help">[?]</A></h2>
+<h2><span style="COLOR: blue">FDIFF</span>: A tool to compare two claim sets or texts <A HREF="#help" title="Help">[?]</A>
+	<span id="dfr_link" title="DFR link">&nbsp;</span>
+</h2>
 </DIV>
+
+<div id="overlay" class="output noprint" readonly="">(MESSAGE)</div>
 
 </div>
 
@@ -1250,7 +1270,7 @@ function release_slider( value ) {
       <input id="Button2" onclick="load_and_launch( 'c' );" value="Load settings & Compare CLMS" type="button" accesskey="L" title="ALT + SHIFT + L">
       <input id="Button3" onclick="launch( 'd' );" value="Compare DESC" type="button" accesskey="D" title="ALT + SHIFT + D"> &vert;
       <input id="Button10" onclick="cycle_line_spacing();" value="Cycle line spacing" type="button">
-      <input id="Button4" onclick="window.print();" value="Print" type="button" title="CTRL + P"> &vert;
+      <input id="Button4" onclick="window.print();" value="Print" type="button" title="CTRL+P (see Troubleshooting section)"> &vert;
       <input id="Button5" onclick="cycle_output_mode();" value="Cycle output mode" type="button" accesskey="T" title="ALT + SHIFT + T">
       <input id="Button9" onclick="copyCleanOutput();" value="Copy clean" type="button">
       <input id="Button11" onclick="copyMonoOutput();" value="Copy monochrome" type="button">
