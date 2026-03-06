@@ -274,6 +274,10 @@ function cycle_output_mode( to_output_mode ) {
 		var filtered_summary = fdiff.filter_table_basis( filtered_mono );
 		var button_text = "Cycle output mode ";
 
+		if( $('#compact_summary').attr("checked") ) {
+			filtered_summary = fdiff.filter_compact_summary( filtered_summary );
+		} 
+
 		if( new_output_mode == OUTPUT_MODE_CLEAN ) {
 			$('#output1').hide();
 			$('#output3').hide();
@@ -607,6 +611,7 @@ function save_settings() {
 		"&fg=" +  ($('#fix_glued_words').attr("checked") ? 1 : 0) +
 		"&lb=" +  ($('#linebreaks').attr("checked") ? 1 : 0) +
 		"&lb2=" +  ($('#linebreaks2').attr("checked") ? 1 : 0) +
+		"&cs=" +  ($('#compact_summary').attr("checked") ? 1 : 0) +
 		"&f4t=" +  ($('#fdiff4_tree_analysis').attr("checked") ? 1 : 0) +
 		"&f4m=" +  ($('#fdiff4_score_matrix').attr("checked") ? 1 : 0) +
 		"&bt=" +  parseFloat( $('#basis_threshold').val() );
@@ -742,6 +747,11 @@ function load_settings( cookie_value ) {
 	} else {
 	    $('#linebreaks2').prop("checked", false);
 	}
+    if( cookie_value.indexOf( "cs=1") != -1 ) {
+	    $('#compact_summary').prop("checked", true);
+	} else {
+	    $('#compact_summary').prop("checked", false);
+	}
     if( cookie_value.indexOf( "f4t=1") != -1 ) {
 	    $('#fdiff4_tree_analysis').prop("checked", true);
 	} else {
@@ -841,6 +851,9 @@ function import_settings( )
 	}
 	if( typeof( settings.linebreaks2 ) != "undefined" ) {
 		cookie_value = cookie_value + "&lb2=" + settings.linebreaks2;
+	}
+	if( typeof( settings.compact_summary ) != "undefined" ) {
+		cookie_value = cookie_value + "&cs=" + settings.compact_summary;
 	}
 	if( typeof( settings.fdiff4_tree_analysis ) != "undefined" ) {
 		cookie_value = cookie_value + "&f4t=" + settings.fdiff4_tree_analysis;
@@ -976,6 +989,14 @@ function regenerate_title( clms_or_desc ) {
 
 }
 
+function set_override_text( num, text ) {
+
+	var text_id = "#claimbase" + num;
+	$(text_id).val( text );
+	launch('c');
+
+}
+
 
 function launch( clms_or_desc ) {
 
@@ -1057,6 +1078,7 @@ function launch1( clms_or_desc ) {
 	  fdiff.set_eszett_normalization( $('#eszett_normalization').attr("checked") );
 	  fdiff.set_insert_line_breaks_indents( $('#linebreaks').attr("checked") );
 	  fdiff.set_insert_line_breaks_indents2( $('#linebreaks2').attr("checked") );
+	  fdiff.set_compact_summary( $('#compact_summary').attr("checked") );
 
 	  if( clms_or_desc == 'c' ) {
 		d = fdiff.diff(text1, text2);
@@ -1094,6 +1116,7 @@ function launch1( clms_or_desc ) {
 	  fdiff.set_fdiff4_score_matrix( $('#fdiff4_score_matrix').attr("checked") );
 	  fdiff.set_insert_line_breaks_indents( $('#linebreaks').attr("checked") );
 	  fdiff.set_insert_line_breaks_indents2( $('#linebreaks2').attr("checked") );
+	  fdiff.set_compact_summary( $('#compact_summary').attr("checked") );
 	  fdiff.set_basis_threshold( parseFloat( $('#basis_threshold').val() ) );
 
 	  // Pass on the overrides
@@ -1102,7 +1125,7 @@ function launch1( clms_or_desc ) {
 	    for( loop = 0; loop < claimbases.length; loop++ ) {
 	      if( claimbases[ loop ].value != "" ) {
 		    // Find the claim number
-			var claim_number = (claimbases[ loop ].name).slice( 9 );
+			var claim_number = (claimbases[ loop ].id).slice( 9 );
 			fdiff.set_claim_base_override( claim_number, claimbases[ loop ].value );
 		  }
 	    }
@@ -1308,12 +1331,12 @@ function release_slider( value ) {
  <div class="noprint">
 	<br>
     <div style="float:left">
-      <input id="Button1" onclick="launch( 'c' );" value="Compare CLMS" type="button" accesskey="C" title="ALT + SHIFT + C">
-      <input id="Button2" onclick="load_and_launch( 'c' );" value="Load settings & Compare CLMS" type="button" accesskey="L" title="ALT + SHIFT + L">
-      <input id="Button3" onclick="launch( 'd' );" value="Compare DESC" type="button" accesskey="D" title="ALT + SHIFT + D"> &vert;
+      <input id="Button1" onclick="launch( 'c' );" value="Compare CLMS" type="button" accesskey="C" title="ALT + C">
+      <input id="Button2" onclick="load_and_launch( 'c' );" value="Load settings & Compare CLMS" type="button" accesskey="L" title="ALT + L">
+      <input id="Button3" onclick="launch( 'd' );" value="Compare DESC" type="button" accesskey="D" title="ALT + D"> &vert;
       <input id="Button4" onclick="window.print();" value="Print" type="button" title="CTRL+P (see Troubleshooting section)">
       <input id="Button10" onclick="cycle_line_spacing();" value="Cycle line spacing" type="button"> &vert;
-      <input id="Button5" onclick="cycle_output_mode();" value="Cycle output mode" type="button" accesskey="T" title="ALT + SHIFT + T">
+      <input id="Button5" onclick="cycle_output_mode();" value="Cycle output mode" type="button" accesskey="T" title="ALT + T">
       <input id="Button9" onclick="copyCleanOutput();" value="Copy clean" type="button">
       <input id="Button11" onclick="copyMonoOutput();" value="Copy monochrome" type="button">
       <input id="Button12" onclick="copySummaryOutput();" value="Copy summary" type="button">
@@ -1336,14 +1359,14 @@ function release_slider( value ) {
 
 <div class="noprint">
 <br>
-<input id="Button1a" onclick="launch_and_scroll( 'c' );" value="Compare CLMS ^" type="button" accesskey="S" title="ALT + SHIFT + S">
-<input id="Button2a" onclick="load_and_launch( 'c' );" value="Load settings & Compare CLMS" type="button" title="ALT + SHIFT + L">
-<input id="Button3a" onclick="launch_and_scroll( 'd' );" value="Compare DESC ^" type="button" accesskey="A" title="ALT + SHIFT + A"> &vert;
+<input id="Button1a" onclick="launch_and_scroll( 'c' );" value="Compare CLMS ^" type="button" accesskey="S" title="ALT + S">
+<input id="Button2a" onclick="load_and_launch( 'c' );" value="Load settings & Compare CLMS" type="button" title="ALT + L">
+<input id="Button3a" onclick="launch_and_scroll( 'd' );" value="Compare DESC ^" type="button" accesskey="A" title="ALT + A"> &vert;
 <input id="Button6"  onclick="load_settings();" value="Load settings" type="button">
 <input id="Button7"  onclick="save_settings();" value="Save settings" type="button"> &vert;
 <input id="Button4a" onclick="window.print();" value="Print" type="button" title="CTRL + P">
 <input id="Button10a" onclick="cycle_line_spacing();" value="Cycle line spacing" type="button"> &vert;
-<input id="Button5a" onclick="cycle_output_mode();" value="Cycle output mode" type="button" accesskey="T" title="ALT + SHIFT + T">
+<input id="Button5a" onclick="cycle_output_mode();" value="Cycle output mode" type="button" accesskey="T" title="ALT + T">
 <input id="Button9a" onclick="copyCleanOutput();" value="Copy clean" type="button">
 <input id="Button11a" onclick="copyMonoOutput();" value="Copy monochrome" type="button">
 <input id="Button12a" onclick="copySummaryOutput();" value="Copy summary" type="button">
@@ -1365,7 +1388,7 @@ function release_slider( value ) {
 <DIV width="100%"><input id="fdiff3_highlights" name="fdiff3_highlights" type="checkbox" checked> <label for="fdiff3_highlights">Highlight FDIFF3 changes</label></DIV>
 <DIV width="100%"><input id="fdiff4_strikeout_highlights" name="fdiff4_strikeout_highlights" type="checkbox" checked> <label for="fdiff4_strikeout_highlights">Highlight FDIFF4 strike-out in red</label></DIV>
 <DIV width="100%"><input id="fdiff4_tree_analysis" name="fdiff4_tree_analysis" type="checkbox"> <label for="fdiff4_tree_analysis">Perform claim tree analysis</label></DIV>
-<DIV width="100%"><input id="fdiff4_score_matrix" name="fdiff4_score_matrix" type="checkbox"> <label for="fdiff4_score_matrix">Show score matrix (<b>new feature</b>, see troubleshooting below)</label></DIV>
+<DIV width="100%"><input id="fdiff4_score_matrix" name="fdiff4_score_matrix" type="checkbox"> <label for="fdiff4_score_matrix">Show score matrix</label></DIV>
 <DIV width="100%"><input id="fdiff4_warn_claims" name="fdiff4_warn_claims" type="checkbox" checked> <label for="fdiff4_warn_claims">Warn about irregularly numbered claim sets</label></DIV>
 <DIV width="100%"><input id="fdiff4_simplify_legend" name="fdiff4_simplify_legend" type="checkbox" checked> <label for="fdiff4_simplify_legend">Simplify base claim legend (only one colour per claim)</label></DIV>
 <DIV width="100%"><input id="convert_claim_styles" name="convert_claim_styles" type="checkbox" checked> <label for="convert_claim_styles">Convert alternative claim formats (*), e.g. [0023], 5), 7/.</label></DIV>
@@ -1377,6 +1400,7 @@ function release_slider( value ) {
 <DIV width="100%"><input id="fix_glued_words" name="fix_glued_words" type="checkbox"> <label for="fix_glued_words">Filter out (un)joining of word pairs, e.g. <strike><font style="background-color: OrangeRed">claim set</font></strike><u><font style="background-color: yellow">claimset</font></u> => claimset</label></DIV>
 <DIV width="100%"><input id="linebreaks" name="linebreaks" type="checkbox"> <label for="linebreaks">Insert line-breaks after <b>(semi-)colons</b> in the output (clears existing linebreaks)</label></DIV>
 <DIV width="100%"><input id="linebreaks2" name="linebreaks2" type="checkbox"> <label for="linebreaks2">Insert line-breaks after <b>commas</b> in the output (clears existing linebreaks)</label></DIV>
+<DIV width="100%"><input id="compact_summary" name="compact_summary" type="checkbox"> <label for="compact_summary">Provide summary in verbal form (<b>NEW FEATURE</b>)</b></label></DIV>
 
 <p>FDIFF4 anti-cluttering:
 <input type="number" min="5" max="50" id="basis_threshold" value="25" maxlength="5" size="3" type="text" aria-label="Basis threshold"> characters
@@ -1554,6 +1578,8 @@ Axel Martinez Möller, Helmar Liess and many others for useful ideas and suggest
 <summary><h3 style="display:inline">Latest features</h3></summary>
 
 <ul>
+<li>Summary output can be switched to verbal form (Done in v4.99).</li>
+<li>Buttons for automatically forming base override strings (Done in v4.98).</li>
 <li>Summary output mode + copy button (Done in v4.93).</li>
 <li>DFR link at the top (Done in v4.88).</li>
 <li>Anti-clutter threshold slider (Done in v4.83).</li>
